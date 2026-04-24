@@ -1,0 +1,1724 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartLand AI — Геоаналитическая платформа</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700;900&family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg:       #040810;
+  --surface:  #080f1e;
+  --card:     #0d1628;
+  --border:   #1a2540;
+  --accent:   #00e5a0;
+  --accent2:  #0af;
+  --accent3:  #f5c518;
+  --danger:   #ff4560;
+  --text:     #e8f0fe;
+  --muted:    #5a7090;
+  --nav-h:    64px;
+  --panel-w:  380px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Exo 2', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── ANIMATED BG GRID ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,229,160,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,229,160,0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+  animation: gridMove 20s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+@keyframes gridMove { to { background-position: 50px 50px; } }
+
+/* ── NAVBAR ── */
+nav {
+  height: var(--nav-h);
+  background: rgba(8,15,30,0.95);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 16px;
+  z-index: 1000;
+  flex-shrink: 0;
+  backdrop-filter: blur(20px);
+  position: relative;
+}
+
+nav::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0.4;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.logo-icon {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  box-shadow: 0 0 20px rgba(0,229,160,0.3);
+  animation: logoPulse 3s ease infinite;
+}
+@keyframes logoPulse {
+  0%,100% { box-shadow: 0 0 20px rgba(0,229,160,0.3); }
+  50%      { box-shadow: 0 0 35px rgba(0,229,160,0.6); }
+}
+
+.logo-text {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+}
+.logo-text span { color: var(--accent); }
+
+.logo-badge {
+  font-size: 0.5rem;
+  font-family: 'Orbitron', sans-serif;
+  color: var(--accent3);
+  border: 1px solid var(--accent3);
+  border-radius: 4px;
+  padding: 2px 5px;
+  letter-spacing: 0.1em;
+  animation: badgeBlink 2s ease infinite;
+}
+@keyframes badgeBlink { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+.nav-sep { width: 1px; height: 32px; background: var(--border); }
+
+/* Map type switcher */
+.map-switcher {
+  display: flex;
+  gap: 3px;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 4px;
+}
+.map-btn {
+  padding: 5px 14px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font-family: 'Exo 2', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.03em;
+}
+.map-btn.active {
+  background: linear-gradient(135deg, var(--accent), #00b87a);
+  color: #040810;
+}
+.map-btn:hover:not(.active) { color: var(--text); }
+
+/* Draw tools */
+.draw-tools {
+  display: flex;
+  gap: 4px;
+  margin-left: 8px;
+}
+.draw-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(0,0,0,0.3);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: 'Exo 2', sans-serif;
+  cursor: pointer;
+  transition: all 0.25s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.draw-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+.draw-btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(0,229,160,0.1);
+  box-shadow: 0 0 12px rgba(0,229,160,0.2);
+}
+
+/* Coord search */
+.coord-search {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+  align-items: center;
+}
+.coord-input {
+  background: rgba(0,0,0,0.4);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  padding: 6px 10px;
+  width: 140px;
+}
+.coord-input::placeholder { color: var(--muted); }
+.coord-input:focus { outline: none; border-color: var(--accent); }
+
+.btn {
+  padding: 7px 16px;
+  border-radius: 8px;
+  border: none;
+  font-family: 'Exo 2', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.03em;
+}
+.btn-green  { background: linear-gradient(135deg, var(--accent), #00b87a); color: #040810; }
+.btn-blue   { background: linear-gradient(135deg, var(--accent2), #0077cc); color: #fff; }
+.btn-ghost  { background: rgba(255,255,255,0.05); color: var(--text); border: 1px solid var(--border); }
+.btn-danger { background: linear-gradient(135deg, var(--danger), #cc0033); color: #fff; }
+.btn:hover  { transform: translateY(-1px); opacity: 0.9; }
+
+.user-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.user-btn:hover { border-color: var(--accent2); color: var(--text); }
+.user-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+.user-dot.on { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+
+/* ── MAIN LAYOUT ── */
+.main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  height: calc(100vh - var(--nav-h));
+  position: relative;
+}
+
+/* ── MAP ── */
+#map {
+  flex: 1;
+  background: #0d1628;
+  cursor: crosshair !important;
+}
+
+/* Leaflet dark overrides */
+.leaflet-popup-content-wrapper {
+  background: var(--card) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 12px !important;
+  color: var(--text) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6) !important;
+}
+.leaflet-popup-tip { background: var(--card) !important; }
+.leaflet-control-zoom a {
+  background: var(--card) !important;
+  border-color: var(--border) !important;
+  color: var(--accent) !important;
+}
+.leaflet-draw-toolbar a { background: var(--card) !important; }
+
+/* Cursor coords bar */
+#cursor-bar {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(8,15,30,0.85);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  padding: 6px 18px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--muted);
+  z-index: 500;
+  pointer-events: none;
+  backdrop-filter: blur(10px);
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+.cursor-bar-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: blink 1.5s ease infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+/* Area indicator while drawing */
+#draw-indicator {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,229,160,0.1);
+  border: 1px solid var(--accent);
+  border-radius: 100px;
+  padding: 8px 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent);
+  z-index: 500;
+  pointer-events: none;
+  backdrop-filter: blur(10px);
+  display: none;
+  gap: 8px;
+  align-items: center;
+  letter-spacing: 0.05em;
+  box-shadow: 0 0 20px rgba(0,229,160,0.2);
+}
+#draw-indicator.show { display: flex; }
+
+/* ── RIGHT PANEL ── */
+#panel {
+  width: var(--panel-w);
+  background: rgba(8,15,30,0.97);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  backdrop-filter: blur(20px);
+}
+
+/* Panel tabs */
+.panel-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.panel-tab {
+  flex: 1;
+  padding: 14px 8px;
+  text-align: center;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.panel-tab.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(0,229,160,0.04); }
+.panel-tab:hover:not(.active) { color: var(--text); }
+
+/* Tab content */
+.tab-pane { display: none; flex: 1; overflow-y: auto; flex-direction: column; }
+.tab-pane.active { display: flex; }
+.tab-pane::-webkit-scrollbar { width: 3px; }
+.tab-pane::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* Empty state */
+.empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  text-align: center;
+  gap: 16px;
+}
+.empty-icon {
+  width: 80px; height: 80px;
+  border-radius: 20px;
+  background: rgba(0,229,160,0.06);
+  border: 1px solid rgba(0,229,160,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  animation: floatIcon 3s ease infinite;
+}
+@keyframes floatIcon { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+.empty-title { font-size: 0.9rem; font-weight: 700; color: var(--text); }
+.empty-sub { font-size: 0.7rem; color: var(--muted); line-height: 1.6; }
+
+/* ── ANALYSIS CARD ── */
+.analysis-card {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Object header */
+.obj-header-block {
+  background: linear-gradient(135deg, rgba(0,229,160,0.08), rgba(0,170,255,0.05));
+  border: 1px solid rgba(0,229,160,0.2);
+  border-radius: 12px;
+  padding: 14px;
+}
+.obj-name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.obj-type-badge {
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.badge-point   { background: rgba(0,229,160,0.15); color: var(--accent); border: 1px solid rgba(0,229,160,0.3); }
+.badge-polygon { background: rgba(0,170,255,0.15); color: var(--accent2); border: 1px solid rgba(0,170,255,0.3); }
+.badge-line    { background: rgba(245,197,24,0.15); color: var(--accent3); border: 1px solid rgba(245,197,24,0.3); }
+.obj-name { font-size: 1rem; font-weight: 700; line-height: 1.2; }
+.obj-layer-label { font-size: 0.62rem; color: var(--muted); }
+
+/* Metric grid */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.metric-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.metric-card:hover { border-color: rgba(0,229,160,0.3); }
+.metric-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  opacity: 0.6;
+}
+.metric-label {
+  font-size: 0.55rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 5px;
+}
+.metric-value {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+}
+.metric-unit {
+  font-size: 0.6rem;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+/* Full-width metric */
+.metric-card.wide { grid-column: 1 / -1; }
+
+/* Soil section */
+.section-title {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.section-title::before {
+  content: '';
+  width: 3px; height: 12px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+/* Soil composition bars */
+.soil-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.soil-bar-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  width: 24px;
+  color: var(--text);
+}
+.soil-bar-track {
+  flex: 1;
+  height: 6px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.soil-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 1s cubic-bezier(0.4,0,0.2,1);
+}
+.soil-bar-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--muted);
+  width: 32px;
+  text-align: right;
+}
+
+/* Quality gauge */
+.quality-gauge {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+}
+.gauge-ring {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  margin: 0 auto 10px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gauge-ring svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+.gauge-ring .gauge-bg { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 6; }
+.gauge-ring .gauge-fill { fill: none; stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 1s ease; }
+.gauge-val {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 900;
+  z-index: 1;
+}
+.gauge-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+.gauge-sub { font-size: 0.65rem; font-weight: 700; margin-top: 4px; }
+
+/* AI Section */
+.ai-block {
+  background: linear-gradient(135deg, rgba(0,170,255,0.06), rgba(0,229,160,0.04));
+  border: 1px solid rgba(0,170,255,0.2);
+  border-radius: 12px;
+  padding: 14px;
+}
+.ai-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.ai-icon {
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent2), var(--accent));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  animation: aiGlow 2s ease infinite;
+}
+@keyframes aiGlow {
+  0%,100% { box-shadow: 0 0 8px rgba(0,170,255,0.4); }
+  50%      { box-shadow: 0 0 20px rgba(0,170,255,0.7); }
+}
+.ai-title { font-size: 0.72rem; font-weight: 700; color: var(--accent2); }
+.ai-status { font-size: 0.55rem; color: var(--muted); }
+
+.ai-typing {
+  font-size: 0.7rem;
+  color: var(--text);
+  line-height: 1.7;
+  min-height: 60px;
+}
+.ai-typing .cursor {
+  display: inline-block;
+  width: 2px; height: 14px;
+  background: var(--accent2);
+  margin-left: 2px;
+  vertical-align: middle;
+  animation: blink 0.8s step-end infinite;
+}
+
+.ai-recommendations {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ai-rec-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.65rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.ai-rec-icon { font-size: 0.8rem; flex-shrink: 0; margin-top: 1px; }
+
+/* Action buttons */
+.action-row {
+  display: flex;
+  gap: 8px;
+}
+.action-row .btn { flex: 1; font-size: 0.65rem; padding: 9px; }
+
+/* ── LAYERS TAB ── */
+.layers-section { padding: 12px; }
+.layer-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.layer-item:hover { border-color: rgba(0,229,160,0.3); }
+.layer-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.layer-name { flex: 1; font-size: 0.72rem; font-weight: 600; }
+.layer-count { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--muted); }
+.layer-toggle {
+  width: 32px; height: 18px;
+  border-radius: 9px;
+  background: var(--border);
+  position: relative;
+  transition: background 0.2s;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.layer-toggle.on { background: var(--accent); }
+.layer-toggle::after {
+  content: '';
+  position: absolute;
+  width: 14px; height: 14px;
+  background: #fff;
+  border-radius: 50%;
+  top: 2px; left: 2px;
+  transition: left 0.2s;
+}
+.layer-toggle.on::after { left: 16px; }
+
+/* ── ADD TAB ── */
+.add-form { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-label { font-size: 0.6rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+.form-input, .form-select, .form-textarea {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: 'Exo 2', sans-serif;
+  font-size: 0.75rem;
+  padding: 9px 12px;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: var(--accent); }
+.form-textarea { min-height: 70px; resize: vertical; }
+.form-select option { background: var(--card); }
+
+.coord-display { display: flex; gap: 6px; }
+.coord-box {
+  flex: 1;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--accent);
+  text-align: center;
+}
+
+/* ── MODAL ── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(6px);
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px;
+  width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.8), 0 0 40px rgba(0,229,160,0.05);
+}
+.modal-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.modal-hint {
+  font-size: 0.65rem;
+  color: var(--muted);
+  background: rgba(0,229,160,0.05);
+  border: 1px solid rgba(0,229,160,0.15);
+  border-radius: 8px;
+  padding: 10px 12px;
+  line-height: 1.6;
+}
+.modal-error { font-size: 0.7rem; color: var(--danger); display: none; }
+
+/* ── TOAST ── */
+#toast-wrap {
+  position: fixed;
+  bottom: 24px; right: 24px;
+  z-index: 9000;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 8px;
+}
+.toast {
+  padding: 12px 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.72rem;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: toastIn 0.3s ease;
+  max-width: 300px;
+  backdrop-filter: blur(10px);
+}
+.toast.success { border-color: var(--accent); }
+.toast.error   { border-color: var(--danger);  }
+.toast.info    { border-color: var(--accent2);  }
+@keyframes toastIn { from { opacity:0; transform:translateX(12px); } to { opacity:1; transform:translateX(0); } }
+
+/* ── PROGRESS/LOADING ── */
+#ai-progress-bar {
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent));
+  background-size: 200% 100%;
+  border-radius: 1px;
+  animation: progressAnim 1.5s linear infinite;
+  display: none;
+  margin-bottom: 8px;
+}
+#ai-progress-bar.show { display: block; }
+@keyframes progressAnim { to { background-position: -200% 0; } }
+
+/* Scan overlay effect on map click */
+.scan-ring {
+  position: absolute;
+  width: 60px; height: 60px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  pointer-events: none;
+  z-index: 600;
+  animation: scanExpand 1s ease forwards;
+}
+@keyframes scanExpand {
+  0%   { opacity:1; transform:translate(-50%,-50%) scale(0.2); }
+  100% { opacity:0; transform:translate(-50%,-50%) scale(3); }
+}
+</style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav>
+  <a class="logo" href="#">
+    <div class="logo-icon">🌿</div>
+    <div>
+      <div class="logo-text">Smart<span>Land</span></div>
+    </div>
+    <div class="logo-badge">AI</div>
+  </a>
+
+  <div class="nav-sep"></div>
+
+  <div class="map-switcher">
+    <button class="map-btn active" onclick="switchMap('osm',this)">🗺 Улицы</button>
+    <button class="map-btn" onclick="switchMap('satellite',this)">🛰 Спутник</button>
+    <button class="map-btn" onclick="switchMap('topo',this)">⛰ Топо</button>
+    <button class="map-btn" onclick="switchMap('dark',this)">🌑 Ночь</button>
+  </div>
+
+  <div class="nav-sep"></div>
+
+  <!-- Drawing tools -->
+  <div class="draw-tools">
+    <button class="draw-btn" id="btn-polygon" onclick="startDraw('polygon')">
+      ⬡ Обвести участок
+    </button>
+    <button class="draw-btn" id="btn-marker" onclick="startDraw('marker')">
+      📍 Точка
+    </button>
+    <button class="draw-btn" id="btn-clear" onclick="clearDrawings()">
+      🗑 Очистить
+    </button>
+  </div>
+
+  <div class="coord-search">
+    <input class="coord-input" id="inp-lat" placeholder="Широта">
+    <input class="coord-input" id="inp-lng" placeholder="Долгота">
+    <button class="btn btn-green" onclick="goToCoords()">Найти</button>
+  </div>
+
+  <div class="nav-sep"></div>
+
+  <div class="user-btn" id="user-btn" onclick="openModal()">
+    <div class="user-dot" id="user-dot"></div>
+    <span id="user-label">Войти</span>
+  </div>
+</nav>
+
+<!-- ── MAIN ── -->
+<div class="main">
+
+  <!-- Map -->
+  <div style="position:relative;flex:1;display:flex;flex-direction:column;">
+    <div id="map" style="flex:1;width:100%;height:100%;"></div>
+
+    <!-- Cursor bar -->
+    <div id="cursor-bar">
+      <div class="cursor-bar-dot"></div>
+      <span id="cur-lat">—</span>
+      <span style="color:var(--border)">|</span>
+      <span id="cur-lng">—</span>
+    </div>
+
+    <!-- Draw indicator -->
+    <div id="draw-indicator">
+      <span>✏️</span>
+      <span id="draw-hint-text">Рисуйте полигон — двойной клик для завершения</span>
+    </div>
+  </div>
+
+  <!-- Panel -->
+  <div id="panel">
+    <div class="panel-tabs">
+      <div class="panel-tab active" onclick="switchTab('analysis',this)">📊 Анализ</div>
+      <div class="panel-tab" onclick="switchTab('layers',this)">🗂 Слои</div>
+      <div class="panel-tab" onclick="switchTab('add',this)">➕ Добавить</div>
+    </div>
+
+    <!-- ANALYSIS TAB -->
+    <div class="tab-pane active" id="tab-analysis">
+      <div class="empty-state" id="empty-analysis">
+        <div class="empty-icon">🌍</div>
+        <div class="empty-title">Выберите участок</div>
+        <div class="empty-sub">Нажмите на точку на карте или обведите участок кнопкой «Обвести», чтобы получить геодезический анализ и прогноз ИИ</div>
+      </div>
+      <div id="analysis-content" style="display:none;" class="analysis-card"></div>
+    </div>
+
+    <!-- LAYERS TAB -->
+    <div class="tab-pane" id="tab-layers">
+      <div class="layers-section" id="layers-list">
+        <div class="empty-state">
+          <div class="empty-icon">📂</div>
+          <div class="empty-title">Загрузка...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADD TAB -->
+    <div class="tab-pane" id="tab-add">
+      <div class="add-form">
+        <div style="font-size:0.65rem;color:var(--muted);text-align:center;padding:8px;">
+          📌 Кликни на карту или обведи участок, затем заполни форму
+        </div>
+        <div class="form-group">
+          <label class="form-label">Координаты</label>
+          <div class="coord-display">
+            <div class="coord-box" id="add-lat-box">—</div>
+            <div class="coord-box" id="add-lng-box">—</div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Название объекта *</label>
+          <input class="form-input" id="add-name" placeholder="Участок А-1 / Геопункт №5">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Описание</label>
+          <textarea class="form-textarea" id="add-desc" placeholder="Дополнительная информация..."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Слой</label>
+          <select class="form-select" id="add-layer-sel"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Тип</label>
+          <select class="form-select" id="add-type-sel">
+            <option value="point">📍 Точка</option>
+            <option value="polygon">⬡ Полигон / Участок</option>
+            <option value="line">— Линия / Дорога</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Кадастровый номер</label>
+          <input class="form-input" id="add-cadastral" placeholder="15-001-XXX">
+        </div>
+        <button class="btn btn-green" onclick="saveObject()" style="width:100%;padding:11px;font-size:0.75rem;">
+          💾 Сохранить объект
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN MODAL -->
+<div class="modal-overlay" id="login-modal">
+  <div class="modal">
+    <div class="modal-title">🌿 SmartLand AI</div>
+    <div class="modal-hint">
+      Тестовый вход:<br>
+      Логин: <strong>admin</strong> &nbsp;|&nbsp; Пароль: <strong>password</strong>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Логин</label>
+      <input class="form-input" id="m-login" placeholder="admin">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Пароль</label>
+      <input class="form-input" id="m-pass" type="password" placeholder="••••••••">
+    </div>
+    <div class="modal-error" id="m-err">Неверный логин или пароль</div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-ghost" onclick="closeModal()" style="flex:1;">Отмена</button>
+      <button class="btn btn-green" onclick="doLogin()" style="flex:1;">Войти</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<!-- Leaflet -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+
+<script>
+// ── CONFIG ──
+// Используем относительные пути для API (работает на любом сервере)
+
+// ── TILE LAYERS ──
+const tiles = {
+  osm:       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM',maxZoom:19,subdomains:'abc'}),
+  satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'© Esri',maxZoom:19}),
+  topo:      L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{attribution:'© OpenTopoMap',maxZoom:17,subdomains:'abc'}),
+  dark:      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'© CartoDB',maxZoom:19,subdomains:'abcd'}),
+};
+
+// ── MAP INIT ──
+const map = L.map('map', { center:[44.8488,65.5092], zoom:13, zoomControl:false, layers:[tiles.osm] });
+L.control.zoom({ position:'topleft' }).addTo(map);
+setTimeout(() => map.invalidateSize(), 300);
+
+let currentTile = 'osm';
+let markersLayer = L.layerGroup().addTo(map);
+let drawnLayer   = L.layerGroup().addTo(map);
+let addModeCoords = null;
+let currentDrawControl = null;
+let isDrawing = false;
+
+// Leaflet.Draw setup
+const drawnItems = new L.FeatureGroup().addTo(map);
+const drawControls = {
+  polygon: new L.Draw.Polygon(map, {
+    shapeOptions: { color:'#00e5a0', fillColor:'#00e5a0', fillOpacity:0.15, weight:2 },
+    showArea: true,
+  }),
+  marker: new L.Draw.Marker(map, {
+    icon: L.divIcon({
+      className:'',
+      html:`<div style="width:20px;height:20px;border-radius:50% 50% 50% 0;background:#00e5a0;transform:rotate(-45deg);border:2px solid rgba(255,255,255,0.8);box-shadow:0 0 12px rgba(0,229,160,0.5);"></div>`,
+      iconSize:[20,20], iconAnchor:[10,20],
+    })
+  }),
+};
+
+// ── SWITCH MAP ──
+function switchMap(type, btn) {
+  if (currentTile === type) return;
+  map.removeLayer(tiles[currentTile]);
+  map.addLayer(tiles[type]);
+  currentTile = type;
+  document.querySelectorAll('.map-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ── CURSOR COORDS ──
+map.on('mousemove', e => {
+  document.getElementById('cur-lat').textContent = 'Ш: ' + e.latlng.lat.toFixed(5);
+  document.getElementById('cur-lng').textContent = 'Д: ' + e.latlng.lng.toFixed(5);
+});
+
+// ── DRAW ──
+function startDraw(type) {
+  if (isDrawing) {
+    map.off(L.Draw.Event.CREATED);
+    try { drawControls[type === 'polygon' ? 'marker' : 'polygon'].disable(); drawControls[type].disable(); } catch(e){}
+  }
+  isDrawing = true;
+  document.getElementById('btn-polygon').classList.remove('active');
+  document.getElementById('btn-marker').classList.remove('active');
+  document.getElementById('btn-' + type).classList.add('active');
+
+  const hint = type === 'polygon'
+    ? 'Кликайте для добавления точек. Двойной клик — завершить обводку'
+    : 'Кликните на карту чтобы поставить маркер';
+  document.getElementById('draw-hint-text').textContent = hint;
+  document.getElementById('draw-indicator').classList.add('show');
+
+  drawControls[type].enable();
+
+  map.once(L.Draw.Event.CREATED, function(e) {
+    isDrawing = false;
+    document.getElementById('btn-polygon').classList.remove('active');
+    document.getElementById('btn-marker').classList.remove('active');
+    document.getElementById('draw-indicator').classList.remove('show');
+
+    const layer = e.layer;
+    drawnItems.clearLayers();
+    drawnItems.addLayer(layer);
+
+    if (type === 'polygon') {
+      const latlngs = layer.getLatLngs()[0];
+      const center  = layer.getBounds().getCenter();
+      const area    = calcArea(latlngs);
+
+      addModeCoords = { lat: center.lat, lng: center.lng };
+      document.getElementById('add-lat-box').textContent = center.lat.toFixed(6);
+      document.getElementById('add-lng-box').textContent = center.lng.toFixed(6);
+      document.getElementById('add-type-sel').value = 'polygon';
+
+      showPolygonAnalysis(center, area, latlngs);
+
+    } else {
+      const latlng = layer.getLatLng();
+      addModeCoords = { lat: latlng.lat, lng: latlng.lng };
+      document.getElementById('add-lat-box').textContent = latlng.lat.toFixed(6);
+      document.getElementById('add-lng-box').textContent = latlng.lng.toFixed(6);
+      document.getElementById('add-type-sel').value = 'point';
+      fetchAndShowObject(latlng.lat, latlng.lng);
+    }
+  });
+}
+
+function clearDrawings() {
+  drawnItems.clearLayers();
+  markersLayer.clearLayers();
+  loadAllObjects();
+  showEmpty();
+  toast('Рисование очищено', 'info');
+}
+
+// ── CALC AREA (Shoelace formula) ──
+function calcArea(latlngs) {
+  let area = 0;
+  const n = latlngs.length;
+  const R = 6371000;
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n;
+    const xi = latlngs[i].lng * Math.PI / 180 * R * Math.cos(latlngs[i].lat * Math.PI / 180);
+    const yi = latlngs[i].lat * Math.PI / 180 * R;
+    const xj = latlngs[j].lng * Math.PI / 180 * R * Math.cos(latlngs[j].lat * Math.PI / 180);
+    const yj = latlngs[j].lat * Math.PI / 180 * R;
+    area += xi * yj - xj * yi;
+  }
+  return Math.abs(area / 2);
+}
+
+// Perimeter in meters
+function calcPerimeter(latlngs) {
+  let p = 0;
+  for (let i = 0; i < latlngs.length; i++) {
+    const a = latlngs[i];
+    const b = latlngs[(i+1) % latlngs.length];
+    p += map.distance(a, b);
+  }
+  return p;
+}
+
+// ── MAP CLICK (non-draw) ──
+map.on('click', function(e) {
+  if (isDrawing) return;
+  const lat = e.latlng.lat, lng = e.latlng.lng;
+  addScanRing(e.containerPoint);
+  addModeCoords = { lat, lng };
+  document.getElementById('add-lat-box').textContent = lat.toFixed(6);
+  document.getElementById('add-lng-box').textContent = lng.toFixed(6);
+  fetchAndShowObject(lat, lng);
+});
+
+function addScanRing(point) {
+  const ring = document.createElement('div');
+  ring.className = 'scan-ring';
+  ring.style.left = point.x + 'px';
+  ring.style.top  = point.y + 'px';
+  document.querySelector('.main').appendChild(ring);
+  setTimeout(() => ring.remove(), 1000);
+}
+
+// ── FETCH OBJECT ──
+async function fetchAndShowObject(lat, lng) {
+  switchTab('analysis', document.querySelector('.panel-tab'));
+  showLoading();
+  try {
+    const r = await fetch(`/api/object?lat=${lat}&lng=${lng}`);
+    const d = await r.json();
+    if (d.success && d.object) {
+      renderObjectAnalysis(d.object);
+    } else {
+      renderFreeLocation(lat, lng);
+    }
+    fetchElevationInto(lat, lng);
+  } catch(err) {
+    hideLoading();
+    console.error('Fetch error:', err);
+    toast('Ошибка загрузки данных', 'error');
+  }
+}
+
+// ── SHOW POLYGON ANALYSIS ──
+async function showPolygonAnalysis(center, area, latlngs) {
+  switchTab('analysis', document.querySelector('.panel-tab'));
+  showLoading();
+
+  const perimeter = calcPerimeter(latlngs);
+  const areaHa    = area / 10000;
+  const pts       = latlngs.length;
+
+  const soil = generateSoilData(center.lat, center.lng);
+
+  setTimeout(() => {
+    hideLoading();
+    renderPolygonAnalysis(center, area, areaHa, perimeter, pts, soil);
+  }, 600);
+
+  fetchElevationInto(center.lat, center.lng);
+}
+
+// Generate soil data
+function generateSoilData(lat, lng) {
+  const seed = Math.abs(Math.sin(lat * 1000) * Math.cos(lng * 1000));
+  const N = Math.round(60 + seed * 30);
+  const P = Math.round(10 + seed * 20);
+  const K = Math.round(5 + (1-seed) * 15);
+  const moisture = Math.round(35 + seed * 40);
+  const ph = (5.5 + seed * 2.5).toFixed(1);
+  const quality = Math.round(55 + seed * 35);
+  const types = ['Чернозём', 'Серозём', 'Каштановая', 'Суглинок', 'Супесь'];
+  const soilType = types[Math.round(seed * (types.length - 1))];
+  return { N, P, K, moisture, ph, quality, soilType };
+}
+
+// ── RENDER POLYGON ANALYSIS ──
+function renderPolygonAnalysis(center, area, areaHa, perimeter, pts, soil) {
+  const qColor = soil.quality > 75 ? '#00e5a0' : soil.quality > 50 ? '#f5c518' : '#ff4560';
+  const qLabel = soil.quality > 75 ? 'Высокое' : soil.quality > 50 ? 'Среднее' : 'Низкое';
+
+  const circ = 2 * Math.PI * 36;
+  const dash = circ * soil.quality / 100;
+
+  document.getElementById('analysis-content').innerHTML = `
+    <div class="obj-header-block">
+      <div class="obj-name-row">
+        <span class="obj-type-badge badge-polygon">⬡ Полигон</span>
+      </div>
+      <div class="obj-name">Обведённый участок</div>
+      <div class="obj-layer-label">${center.lat.toFixed(5)}°, ${center.lng.toFixed(5)}°</div>
+    </div>
+
+    <div class="section-title">Геодезические данные</div>
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">Площадь</div>
+        <div class="metric-value">${areaHa.toFixed(2)}</div>
+        <div class="metric-unit">гектар</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Площадь</div>
+        <div class="metric-value">${Math.round(area).toLocaleString('ru')}</div>
+        <div class="metric-unit">м²</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Периметр</div>
+        <div class="metric-value">${(perimeter/1000).toFixed(3)}</div>
+        <div class="metric-unit">км</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Периметр</div>
+        <div class="metric-value">${Math.round(perimeter)}</div>
+        <div class="metric-unit">метров</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Вершин</div>
+        <div class="metric-value">${pts}</div>
+        <div class="metric-unit">точек</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Высота н.у.м.</div>
+        <div class="metric-value" id="elev-val" style="font-size:0.85rem;">—</div>
+        <div class="metric-unit">метров</div>
+      </div>
+    </div>
+
+    <div class="section-title">Анализ почвы (ИИ)</div>
+    <div style="display:flex;gap:8px;">
+      <div class="quality-gauge" style="flex:1;">
+        <div class="gauge-ring">
+          <svg viewBox="0 0 80 80" width="80" height="80">
+            <circle class="gauge-bg" cx="40" cy="40" r="36"/>
+            <circle class="gauge-fill" cx="40" cy="40" r="36"
+              stroke="${qColor}"
+              stroke-dasharray="${dash} ${circ}"
+              stroke-dashoffset="0"/>
+          </svg>
+          <div class="gauge-val" style="color:${qColor}">${soil.quality}</div>
+        </div>
+        <div class="gauge-label">Бонитет почвы</div>
+        <div class="gauge-sub" style="color:${qColor}">${qLabel}</div>
+      </div>
+      <div style="flex:1.5;display:flex;flex-direction:column;justify-content:center;gap:4px;">
+        <div style="font-size:0.62rem;color:var(--muted);margin-bottom:4px;">Тип: <strong style="color:var(--text)">${soil.soilType}</strong></div>
+        <div class="soil-bar-row">
+          <span class="soil-bar-label">N</span>
+          <div class="soil-bar-track"><div class="soil-bar-fill" style="width:${soil.N}%;background:#00e5a0;"></div></div>
+          <span class="soil-bar-val">${soil.N}%</span>
+        </div>
+        <div class="soil-bar-row">
+          <span class="soil-bar-label">P</span>
+          <div class="soil-bar-track"><div class="soil-bar-fill" style="width:${soil.P}%;background:#0af;"></div></div>
+          <span class="soil-bar-val">${soil.P}%</span>
+        </div>
+        <div class="soil-bar-row">
+          <span class="soil-bar-label">K</span>
+          <div class="soil-bar-track"><div class="soil-bar-fill" style="width:${soil.K}%;background:#f5c518;"></div></div>
+          <span class="soil-bar-val">${soil.K}%</span>
+        </div>
+        <div class="soil-bar-row">
+          <span class="soil-bar-label" style="font-size:0.5rem;">pH</span>
+          <div class="soil-bar-track"><div class="soil-bar-fill" style="width:${(soil.ph/14*100)}%;background:#a855f7;"></div></div>
+          <span class="soil-bar-val">${soil.ph}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="ai-block">
+      <div class="ai-header">
+        <div class="ai-icon">🤖</div>
+        <div>
+          <div class="ai-title">SmartLand AI — Анализ участка</div>
+          <div class="ai-status">Геодезический ИИ · Прогноз</div>
+        </div>
+      </div>
+      <div id="ai-progress-bar" class="show"></div>
+      <div class="ai-typing" id="ai-text">Анализирую данные участка...</div>
+      <div class="ai-recommendations" id="ai-recs" style="display:none;"></div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn btn-green" onclick="copyCoords(${center.lat},${center.lng})">📋 Координаты</button>
+      <button class="btn btn-ghost" onclick="switchTab('add',document.querySelectorAll('.panel-tab')[2])">➕ Сохран��ть</button>
+    </div>
+  `;
+
+  document.getElementById('empty-analysis').style.display = 'none';
+  document.getElementById('analysis-content').style.display = 'flex';
+
+  startAIAnalysis(areaHa, perimeter, soil, 'polygon');
+}
+
+// ── RENDER OBJECT ANALYSIS ──
+function renderObjectAnalysis(obj) {
+  hideLoading();
+  const typeBadge = { point: 'badge-point', polygon: 'badge-polygon', line: 'badge-line' }[obj.type] || 'badge-point';
+  const typeLabel = { point: '📍 Точка', polygon: '⬡ Полигон', line: '— Линия' }[obj.type] || obj.type;
+
+  const soil = generateSoilData(obj.lat, obj.lng);
+  const circ = 2 * Math.PI * 36;
+  const dash = circ * soil.quality / 100;
+  const qColor = soil.quality > 75 ? '#00e5a0' : soil.quality > 50 ? '#f5c518' : '#ff4560';
+  const qLabel = soil.quality > 75 ? 'Высокое' : soil.quality > 50 ? 'Среднее' : 'Низкое';
+
+  let attrsHtml = '';
+  const attrs = obj.attributes || {};
+  if (Object.keys(attrs).length > 0) {
+    attrsHtml = `<div class="section-title">Атрибуты</div>` +
+      Object.entries(attrs).map(([k,v]) => `
+        <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dashed rgba(255,255,255,0.04);font-size:0.65rem;">
+          <span style="color:var(--muted)">${k.replace(/_/g,' ')}</span>
+          <span style="font-family:'JetBrains Mono',monospace;">${v}</span>
+        </div>`).join('');
+  }
+
+  const color = obj.layer_color || '#00e5a0';
+
+  document.getElementById('analysis-content').innerHTML = `
+    <div class="obj-header-block">
+      <div class="obj-name-row">
+        <span class="obj-type-badge ${typeBadge}">${typeLabel}</span>
+        <div style="width:8px;height:8px;border-radius:50%;background:${color};margin-left:auto;box-shadow:0 0 6px ${color};"></div>
+      </div>
+      <div class="obj-name">${obj.name}</div>
+      <div class="obj-layer-label">${obj.layer_name || 'Без слоя'} · ${obj.author_name || ''}</div>
+    </div>
+
+    ${obj.description ? `<div style="font-size:0.7rem;color:var(--muted);line-height:1.6;padding:10px;background:rgba(255,255,255,0.03);border-radius:8px;border-left:2px solid var(--accent2);">${obj.description}</div>` : ''}
+
+    <div class="section-title">Координаты</div>
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">Широта</div>
+        <div class="metric-value" style="font-size:0.8rem;">${parseFloat(obj.lat).toFixed(6)}</div>
+        <div class="metric-unit">WGS-84 °</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Долгота</div>
+        <div class="metric-value" style="font-size:0.8rem;">${parseFloat(obj.lng).toFixed(6)}</div>
+        <div class="metric-unit">WGS-84 °</div>
+      </div>
+      ${obj.elevation_m ? `
+      <div class="metric-card">
+        <div class="metric-label">Высота н.у.м.</div>
+        <div class="metric-value">${obj.elevation_m}</div>
+        <div class="metric-unit">метров</div>
+      </div>` : `
+      <div class="metric-card">
+        <div class="metric-label">Высота н.у.м.</div>
+        <div class="metric-value" id="elev-val" style="font-size:0.8rem;">—</div>
+        <div class="metric-unit">метров</div>
+      </div>`}
+      ${obj.area_m2 ? `
+      <div class="metric-card">
+        <div class="metric-label">Площадь</div>
+        <div class="metric-value">${obj.area_ha || (obj.area_m2/10000).toFixed(2)}</div>
+        <div class="metric-unit">гектар</div>
+      </div>` : ''}
+    </div>
+
+    <div class="section-title">Анализ почвы (ИИ)</div>
+    <div style="display:flex;gap:8px;">
+      <div class="quality-gauge" style="flex:1;">
+        <div class="gauge-ring">
+          <svg viewBox="0 0 80 80" width="80" height="80">
+            <circle class="gauge-bg" cx="40" cy="40" r="36"/>
+            <circle class="gauge-fill" cx="40" cy="40" r="36"
+              stroke="${qColor}"
+              stroke-dasharray="${dash} ${circ}"
+              stroke-dashoffset="0"/>
+          </svg>
+          <div class="gauge-val" style="color:${qColor}">${soil.quality}</div>
+        </div>
+        <div class="gauge-label">Бонитет</div>
+        <div class="gauge-sub" style="color:${qColor}">${qLabel}</div>
+      </div>
+      <div style="flex:1.5;display:flex;flex-direction:column;justify-content:center;gap:4px;">
+        <div style="font-size:0.62rem;color:var(--muted);margin-bottom:4px;">Тип: <strong style="color:var(--text)">${soil.soilType}</strong></div>
+        <div class="soil-bar-row">
+          <span class="soil-bar-label">N</span>
+          <div class="soil-bar-track"><div class="soil-bar-fill" style="width:${soil.N}%;background:#00e5a0;"></div></div>
+          <span class="soil-bar-val">${soil.N}%</span>
+        </div>
+        <div class="soil-bar-row">
+          <span class="soil-bar-label">P</span>
+          <div class="soil-bar-track"><div class="soil-bar-fill" style="width:${soil.P}%;background:#0af;"></div></div>
+          <span class="soil-bar-val">${soil.P}%</span>
+        </div>
+        <div class="soil-bar-row">
+          <span class="soil-bar-label">K</span>
+          <div class="soil-bar-track"><div class="soil-bar-fill" style="width:${soil.K}%;background:#f5c518;"></div></div>
+          <span class="soil-bar-val">${soil.K}%</span>
+        </div>
+      </div>
+    </div>
+
+    ${attrsHtml}
+
+    <div class="ai-block">
+      <div class="ai-header">
+        <div class="ai-icon">🤖</div>
+        <div>
+          <div class="ai-title">SmartLand AI — Рекомендации</div>
+          <div class="ai-status">Анализ геодезических данных</div>
+        </div>
+      </div>
+      <div id="ai-progress-bar" class="show"></div>
+      <div class="ai-typing" id="ai-text">Анализирую данные...</div>
+      <div class="ai-recommendations" id="ai-recs" style="display:none;"></div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn btn-green" onclick="copyCoords(${obj.lat},${obj.lng})">📋 Коорд.</button>
+      <button class="btn btn-ghost" onclick="map.setView([${obj.lat},${obj.lng}],16)">🔍 Zoom</button>
+    </div>
+  `;
+
+  document.getElementById('empty-analysis').style.display = 'none';
+  document.getElementById('analysis-content').style.display = 'flex';
+
+  startAIAnalysis(null, null, soil, 'point', obj);
+}
+
+// ── RENDER FREE LOCATION ──
+function renderFreeLocation(lat, lng) {
+  hideLoading();
+  const soil = generateSoilData(lat, lng);
+  const qColor = soil.quality > 75 ? '#00e5a0' : soil.quality > 50 ? '#f5c518' : '#ff4560';
+
+  document.getElementById('analysis-content').innerHTML = `
+    <div class="obj-header-block">
+      <div class="obj-name-row"><span class="obj-type-badge badge-point">📍 Точка</span></div>
+      <div class="obj-name">Свободная территория</div>
+      <div class="obj-layer-label">${lat.toFixed(6)}°, ${lng.toFixed(6)}°</div>
+    </div>
+
+    <div class="section-title">Координаты</div>
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">Широта</div>
+        <div class="metric-value" style="font-size:0.85rem;">${lat.toFixed(6)}</div>
+        <div class="metric-unit">WGS-84 °</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Долгота</div>
+        <div class="metric-value" style="font-size:0.85rem;">${lng.toFixed(6)}</div>
+        <div class="metric-unit">WGS-84 °</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Высота н.у.м.</div>
+        <div class="metric-value" id="elev-val">—</div>
+        <div class="metric-unit">метров</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Бонитет почвы</div>
+        <div class="metric-value" style="color:${qColor}">${soil.quality}</div>
+        <div class="metric-unit">баллов</div>
+      </div>
+    </div>
+
+    <div class="section-title">Состав почвы (ИИ прогноз)</div>
+    <div style="padding:12px;background:var(--card);border:1px solid var(--border);border-radius:10px;">
+      <div style="font-size:0.62rem;color:var(--muted);margin-bottom:10px;">Тип: <strong style="color:var(--text)">${soil.soilType}</strong> · pH: ${soil.ph}</div>
+      <div class="soil-bar-row"><span class="soil-bar-label">N</span><div class="soil-bar-track"><div class="soil-bar-fill" style="width:${soil.N}%;background:#00e5a0;"></div></div><span class="soil-bar-val">${soil.N}%</span></div>
+      <div class="soil-bar-row"><span class="soil-bar-label">P</span><div class="soil-bar-track"><div class="soil-bar-fill" style="width:${soil.P}%;background:#0af;"></div></div><span class="soil-bar-val">${soil.P}%</span></div>
+      <div class="soil-bar-row"><span class="soil-bar-label">K</span><div class="soil-bar-track"><div class="soil-bar-fill" style="width:${soil.K}%;background:#f5c518;"></div></div><span class="soil-bar-val">${soil.K}%</span></div>
+    </div>
+
+    <div class="ai-block">
+      <div class="ai-header">
+        <div class="ai-icon">🤖</div>
+        <div><div class="ai-title">SmartLand AI</div><div class="ai-status">Прогноз по точке</div></div>
+      </div>
+      <div id="ai-progress-bar" class="show"></div>
+      <div class="ai-typing" id="ai-text">Анализирую точку...</div>
+      <div class="ai-recommendations" id="ai-recs" style="display:none;"></div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn btn-green" onclick="switchTab('add',document.querySelectorAll('.panel-tab')[2])" style="flex:2;">➕ Добавить объект</button>
+      <button class="btn btn-ghost" onclick="copyCoords(${lat},${lng})">📋</button>
+    </div>
+  `;
+
+  document.getElementById('empty-analysis').style.display = 'none';
+  document.getElementById('analysis-content').style.display = 'flex';
+  startAIAnalysis(null, null, soil, 'free');
+}
+
+// ── AI TYPING ANIMATION ──
+function startAIAnalysis(areaHa, perimeter, soil, mode, obj) {
+  const progressBar = document.getElementById('ai-progress-bar');
+  const textEl = document.getElementById('ai-text');
+  const recsEl = document.getElementById('ai-recs');
+  if (!textEl) return;
+
+  let fullText = '';
+  if (mode === 'polygon') {
+    fullText = `Площадь участка составляет ${areaHa.toFixed(2)} га (периметр ${(perimeter/1000).toFixed(2)} км). Тип почвы — ${soil.soilType}, бонитет ${soil.quality} баллов. Содержание азота ${soil.N}%, фосфора ${soil.P}%, калия ${soil.K}%.`;
+  } else if (mode === 'point' && obj) {
+    fullText = `Объект «${obj.name}» расположен в зоне ${soil.soilType}. Бонитет почвы: ${soil.quality} баллов. pH = ${soil.ph}. Питательные элементы: N ${soil.N}%, P ${soil.P}%, K ${soil.K}%.`;
+  } else {
+    fullText = `Анализ точки на карте. Тип почвы в данном районе — ${soil.soilType}. Бонитет: ${soil.quality} баллов. pH = ${soil.ph}. N: ${soil.N}%, P: ${soil.P}%, K: ${soil.K}%.`;
+  }
+
+  const recs = [];
+  if (soil.N < 70) recs.push({ icon:'🌱', text: `Рекомендуется внесение азотных удобрений (аммиачная селитра, мочевина)` });
+  if (soil.P < 20) recs.push({ icon:'💧', text: `Дефицит фосфора — применить суперфосфат перед посевом` });
+  if (soil.K < 10) recs.push({ icon:'🪨', text: `Низкий калий — внесение хлористого калия или золы` });
+  if (soil.quality > 70) recs.push({ icon:'✅', text: `Высокое плодородие — участок пригоден для интенсивного земледелия` });
+  if (soil.quality < 55) recs.push({ icon:'⚠️', text: `Низкий бонитет — требуется мелиорация и рекультивация` });
+  recs.push({ icon:'📐', text: `Рекомендуется проведение геодезической съёмки для уточнения границ` });
+
+  textEl.innerHTML = '';
+  let i = 0;
+  const interval = setInterval(() => {
+    if (i < fullText.length) {
+      textEl.innerHTML = fullText.slice(0, ++i) + '<span class="cursor"></span>';
+    } else {
+      clearInterval(interval);
+      textEl.innerHTML = fullText;
+      if (progressBar) progressBar.classList.remove('show');
+      if (recsEl) {
+        recsEl.style.display = 'flex';
+        recsEl.innerHTML = recs.map(r =>
+          `<div class="ai-rec-item"><span class="ai-rec-icon">${r.icon}</span>${r.text}</div>`
+        ).join('');
+      }
+    }
+  }, 18);
+}
+
+// ── ELEVATION ──
+async function fetchElevationInto(lat, lng) {
+  try {
+    const r = await fetch(`/api/elevation?lat=${lat}&lng=${lng}`);
+    const d = await r.json();
+    const el = document.getElementById('elev-val');
+    if (el && d.elevation !== null) {
+      el.textContent = d.elevation;
+      el.style.color = 'var(--accent)';
+    }
+  } catch(e) {
+    console.warn('Elevation fetch error:', e);
+  }
+}
+
+// ── LOAD ALL OBJECTS ──
+async function loadAllObjects() {
+  try {
+    const r = await fetch('/api/objects');
+    const d = await r.json();
+    markersLayer.clearLayers();
+    if (d.features) {
+      d.features.forEach(f => {
+        const [lng, lat] = f.geometry.coordinates;
+        const p = f.properties;
+        const color = p.layer_color || '#00e5a0';
+        const icon = L.divIcon({
+          className: '',
+          html: `<div style="width:18px;height:18px;border-radius:50% 50% 50% 0;background:${color};transform:rotate(-45deg);border:2px solid rgba(255,255,255,0.7);box-shadow:0 0 10px ${color}55;"></div>`,
+          iconSize: [18,18], iconAnchor:[9,18],
+        });
+        L.marker([lat,lng], {icon})
+          .bindPopup(`<div style="padding:4px;"><strong>${p.name}</strong><br><small style="color:#5a7090">${p.layer_name||''}</small></div>`)
+          .on('click', () => fetchAndShowObject(lat, lng))
+          .addTo(markersLayer);
+      });
+    }
+  } catch(e) {
+    console.error('Load objects error:', e);
+    toast('Ошибка загрузки объектов', 'error');
+  }
+}
+
+// ── LOAD LAYERS ──
+async function loadLayers() {
+  try {
+    const r = await fetch('/api/layers');
+    const d = await r.json();
+    if (!d.layers) return;
+    const list = document.getElementById('layers-list');
+    const sel  = document.getElementById('add-layer-sel');
+    list.innerHTML = '';
+    sel.innerHTML  = '<option value="">— выберите слой —</option>';
+    d.layers.forEach(l => {
+      list.innerHTML += `
+        <div class="layer-item">
+          <div class="layer-dot" style="background:${l.color}"></div>
+          <div class="layer-name">${l.name}</div>
+          <div class="layer-toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>`;
+      sel.innerHTML += `<option value="${l.id}">${l.name}</option>`;
+    });
+  } catch(e) {
+    console.error('Load layers error:', e);
+  }
+}
+
+// ── SAVE OBJECT ──
+async function saveObject() {
+  if (!addModeCoords) { toast('Сначала кликни на карту', 'error'); return; }
+  const name = document.getElementById('add-name').value.trim();
+  if (!name) { toast('Введи название объекта', 'error'); return; }
+  try {
+    const r = await fetch('/api/objects', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        description: document.getElementById('add-desc').value,
+        layer_id:    document.getElementById('add-layer-sel').value || null,
+        type:        document.getElementById('add-type-sel').value,
+        lat:         addModeCoords.lat,
+        lng:         addModeCoords.lng,
+        attributes:  { cadastral_number: document.getElementById('add-cadastral').value }
+      })
+    });
+    const d = await r.json();
+    if (d.success) {
+      toast('✅ Объект сохранён!', 'success');
+      document.getElementById('add-name').value = '';
+      document.getElementById('add-desc').value = '';
+      document.getElementById('add-cadastral').value = '';
+      loadAllObjects();
+    } else {
+      toast(d.error || 'Ошибка сохранения', 'error');
+    }
+  } catch(e) {
+    console.error('Save error:', e);
+    toast('Ошибка сохранения', 'error');
+  }
+}
+
+// ── GOTO COORDS ──
+function goToCoords() {
+  const lat = parseFloat(document.getElementById('inp-lat').value);
+  const lng = parseFloat(document.getElementById('inp-lng').value);
+  if (isNaN(lat)||isNaN(lng)) { toast('Введи корректные координаты', 'error'); return; }
+  map.setView([lat,lng], 15);
+  fetchAndShowObject(lat, lng);
+}
+
+// ── AUTH ──
+function openModal()  { document.getElementById('login-modal').classList.add('show'); }
+function closeModal() { document.getElementById('login-modal').classList.remove('show'); }
+
+async function doLogin() {
+  const login = document.getElementById('m-login').value;
+  const pass  = document.getElementById('m-pass').value;
+  try {
+    const r = await fetch('/api/login', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({login, password: pass})
+    });
+    const d = await r.json();
+    if (d.success) {
+      closeModal();
+      document.getElementById('user-dot').classList.add('on');
+      document.getElementById('user-label').textContent = d.user.name;
+      toast(`Добро пожаловать, ${d.user.name}!`, 'success');
+    } else {
+      document.getElementById('m-err').style.display = 'block';
+    }
+  } catch(e) {
+    console.error('Login error:', e);
+    toast('Ошибка подключения', 'error');
+  }
+}
+document.getElementById('m-pass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+
+// ── UI HELPERS ──
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+function showEmpty() {
+  document.getElementById('empty-analysis').style.display = 'flex';
+  document.getElementById('analysis-content').style.display = 'none';
+}
+
+function showLoading() {
+  document.getElementById('empty-analysis').innerHTML = `
+    <div class="empty-icon" style="animation:none;">⏳</div>
+    <div class="empty-title">Загрузка данных...</div>
+    <div style="width:100%;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent));background-size:200%;animation:progressAnim 1s linear infinite;border-radius:1px;margin-top:8px;"></div>`;
+  document.getElementById('empty-analysis').style.display = 'flex';
+  document.getElementById('analysis-content').style.display = 'none';
+}
+function hideLoading() {}
+
+function copyCoords(lat, lng) {
+  navigator.clipboard.writeText(`${lat}, ${lng}`)
+    .then(() => toast('Координаты скопированы!', 'success'))
+    .catch(() => toast(`${lat.toFixed(5)}, ${lng.toFixed(5)}`, 'info'));
+}
+
+function toast(msg, type='info') {
+  const icons = {success:'✓', error:'✕', info:'ℹ'};
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span>${icons[type]}</span> ${msg}`;
+  document.getElementById('toast-wrap').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+// ── INIT ──
+document.addEventListener('DOMContentLoaded', () => {
+  loadAllObjects();
+  loadLayers();
+  fetch('/api/me').then(r=>r.json()).then(d => {
+    if (d.logged_in) {
+      document.getElementById('user-dot').classList.add('on');
+      document.getElementById('user-label').textContent = d.name;
+    }
+  }).catch(()=>{});
+});
+</script>
+</body>
+</html>

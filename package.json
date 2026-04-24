@@ -1,0 +1,21 @@
+{
+  "name": "smartland-ai",
+  "version": "1.0.0",
+  "description": "Geo-analytics platform with AI soil analysis",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": "18.x",
+    "npm": "9.x"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "body-parser": "^1.20.2",
+    "mysql2": "^3.6.0",
+    "dotenv": "^16.3.1"
+  }
+}
