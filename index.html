@@ -23,6 +23,8 @@
   --muted:    #5a7090;
   --nav-h:    64px;
   --panel-w:  380px;
+  --mobile-panel-h: 55vh;
+  --touch-target: 44px;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -780,9 +782,388 @@ nav::after {
   0%   { opacity:1; transform:translate(-50%,-50%) scale(0.2); }
   100% { opacity:0; transform:translate(-50%,-50%) scale(3); }
 }
+
+/* ── MOBILE PANEL TOGGLE ── */
+#panel-toggle-cb { display: none; }
+
+.panel-toggle-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  position: fixed;
+  bottom: 20px;
+  right: 16px;
+  z-index: 800;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), #00b87a);
+  border: none;
+  color: #040810;
+  font-size: 1.2rem;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(0,229,160,0.45);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.panel-toggle-btn:active { transform: scale(0.93); }
+
+/* ── TABLET BREAKPOINT (768px – 1024px) ── */
+@media (max-width: 1024px) and (min-width: 769px) {
+  :root { --panel-w: 300px; }
+
+  .logo-text { font-size: 0.88rem; }
+  .logo-badge { font-size: 0.45rem; }
+
+  .map-btn { padding: 5px 10px; font-size: 0.68rem; }
+
+  .draw-btn { padding: 6px 9px; font-size: 0.68rem; }
+
+  .coord-input { width: 110px; font-size: 0.65rem; }
+
+  .panel-tab { font-size: 0.58rem; padding: 12px 6px; }
+
+  .metric-value { font-size: 0.9rem; }
+}
+
+/* ── MOBILE BREAKPOINT (≤ 768px) ── */
+@media (max-width: 768px) {
+  :root {
+    --nav-h: 56px;
+  }
+
+  /* ── NAVBAR ── */
+  nav {
+    padding: 0 12px;
+    gap: 8px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  nav::-webkit-scrollbar { display: none; }
+
+  .logo-text { font-size: 0.82rem; }
+  .logo-badge { display: none; }
+  .logo-icon { width: 30px; height: 30px; font-size: 0.95rem; }
+
+  /* Hide secondary nav items on mobile to save space */
+  .nav-sep { display: none; }
+
+  .map-switcher {
+    gap: 2px;
+    padding: 3px;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+  .map-btn {
+    padding: 5px 8px;
+    font-size: 0.62rem;
+    border-radius: 6px;
+    min-height: var(--touch-target);
+    display: flex;
+    align-items: center;
+  }
+
+  /* Hide text labels on map buttons, keep emoji */
+  .map-btn .map-label { display: none; }
+  .map-btn .map-icon { font-size: 1.1rem; line-height: 1; }
+
+  /* Draw tools — icon-only on mobile */
+  .draw-tools {
+    gap: 3px;
+    margin-left: 0;
+    flex-shrink: 0;
+  }
+  .draw-btn {
+    padding: 0;
+    width: var(--touch-target);
+    height: var(--touch-target);
+    border-radius: 10px;
+    font-size: 1rem;
+    justify-content: center;
+    gap: 0;
+  }
+  /* Hide text labels inside draw buttons, keep emoji icon */
+  .draw-btn .draw-label { display: none; }
+  .draw-btn .draw-icon { font-size: 1.1rem; line-height: 1; }
+
+  /* Coord search — push to end, compact */
+  .coord-search {
+    margin-left: auto;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .coord-input {
+    width: 80px;
+    font-size: 0.6rem;
+    padding: 5px 7px;
+  }
+  .coord-search .btn {
+    padding: 6px 10px;
+    font-size: 0.65rem;
+    min-height: var(--touch-target);
+  }
+
+  .user-btn {
+    padding: 5px 10px;
+    font-size: 0.65rem;
+    flex-shrink: 0;
+    min-height: var(--touch-target);
+  }
+
+  /* ── MAIN LAYOUT — vertical stack ── */
+  .main {
+    flex-direction: column;
+    height: calc(100vh - var(--nav-h));
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Map wrapper takes all remaining space */
+  .main > div:first-child {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+  }
+
+  #map {
+    width: 100%;
+    height: 100%;
+    cursor: default !important;
+  }
+
+  /* Cursor bar — smaller, stays visible */
+  #cursor-bar {
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 5px 12px;
+    font-size: 0.55rem;
+    gap: 10px;
+    white-space: nowrap;
+    max-width: calc(100vw - 32px);
+  }
+
+  /* Draw indicator */
+  #draw-indicator {
+    top: 10px;
+    font-size: 0.65rem;
+    padding: 6px 14px;
+    max-width: calc(100vw - 32px);
+    text-align: center;
+  }
+
+  /* ── PANEL — bottom drawer on mobile ── */
+  #panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: var(--mobile-panel-h);
+    border-left: none;
+    border-top: 1px solid var(--border);
+    border-radius: 20px 20px 0 0;
+    z-index: 700;
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 -8px 40px rgba(0,0,0,0.6);
+  }
+
+  /* Drag handle on top of panel */
+  #panel::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 10px auto 0;
+    flex-shrink: 0;
+  }
+
+  /* Panel open state — toggled by checkbox */
+  #panel-toggle-cb:checked ~ .main #panel {
+    transform: translateY(0);
+  }
+
+  /* Adjust map height when panel is open */
+  #panel-toggle-cb:checked ~ .main > div:first-child {
+    flex: none;
+    height: calc(100vh - var(--nav-h) - var(--mobile-panel-h));
+  }
+
+  /* Show the FAB toggle button */
+  .panel-toggle-btn {
+    display: flex;
+  }
+
+  /* Rotate FAB icon when panel is open */
+  #panel-toggle-cb:checked ~ .panel-toggle-btn {
+    background: linear-gradient(135deg, var(--accent2), #0077cc);
+    box-shadow: 0 4px 20px rgba(0,170,255,0.45);
+  }
+
+  /* Panel tabs — larger touch targets */
+  .panel-tabs {
+    padding-top: 4px;
+  }
+  .panel-tab {
+    padding: 12px 6px;
+    font-size: 0.6rem;
+    min-height: var(--touch-target);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Tab content scrollable */
+  .tab-pane {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── FORM INPUTS — touch-friendly ── */
+  .form-input,
+  .form-select,
+  .form-textarea {
+    font-size: 16px; /* prevents iOS zoom on focus */
+    padding: 12px 14px;
+    min-height: var(--touch-target);
+    border-radius: 10px;
+  }
+  .form-textarea { min-height: 80px; }
+
+  /* Buttons — larger tap targets */
+  .btn {
+    min-height: var(--touch-target);
+    padding: 10px 16px;
+    font-size: 0.75rem;
+  }
+  .action-row .btn { padding: 11px 10px; font-size: 0.7rem; }
+
+  /* Save button */
+  .add-form > .btn { padding: 13px; font-size: 0.8rem; }
+
+  /* Metric cards — slightly larger text */
+  .metric-value { font-size: 0.95rem; }
+  .metric-label { font-size: 0.58rem; }
+
+  /* Layer items — bigger touch targets */
+  .layer-item { padding: 12px 14px; }
+  .layer-toggle {
+    width: 38px;
+    height: 22px;
+    border-radius: 11px;
+  }
+  .layer-toggle::after {
+    width: 18px;
+    height: 18px;
+  }
+  .layer-toggle.on::after { left: 18px; }
+
+  /* Modal — full-width on mobile */
+  .modal {
+    width: calc(100vw - 32px);
+    max-width: 380px;
+    padding: 24px 20px;
+    border-radius: 20px;
+  }
+
+  /* Toast — bottom-left on mobile to avoid FAB */
+  #toast-wrap {
+    bottom: 16px;
+    right: auto;
+    left: 16px;
+    max-width: calc(100vw - 32px);
+  }
+  .toast { font-size: 0.7rem; max-width: 100%; }
+
+  /* Empty state — compact */
+  .empty-state { padding: 20px 16px; gap: 10px; }
+  .empty-icon { width: 60px; height: 60px; font-size: 1.5rem; }
+  .empty-title { font-size: 0.82rem; }
+  .empty-sub { font-size: 0.65rem; }
+
+  /* Analysis card padding */
+  .analysis-card { padding: 12px; gap: 10px; }
+
+  /* AI block */
+  .ai-typing { font-size: 0.68rem; line-height: 1.6; }
+  .ai-rec-item { font-size: 0.63rem; }
+}
+
+/* ── SMALL PHONE BREAKPOINT (≤ 480px) ── */
+@media (max-width: 480px) {
+  :root { --mobile-panel-h: 60vh; }
+
+  nav { padding: 0 8px; gap: 6px; }
+
+  .logo-text { font-size: 0.75rem; }
+  .logo-icon { width: 26px; height: 26px; font-size: 0.85rem; }
+
+  /* Even more compact map buttons */
+  .map-btn { padding: 4px 6px; }
+
+  .draw-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+  }
+
+  .coord-input { width: 68px; font-size: 0.58rem; padding: 4px 6px; }
+
+  .coord-search .btn { padding: 5px 8px; font-size: 0.6rem; }
+
+  .user-btn { padding: 4px 8px; font-size: 0.6rem; }
+
+  /* Panel handle */
+  #panel::before { width: 32px; height: 3px; }
+
+  .panel-tab { font-size: 0.55rem; padding: 10px 4px; }
+
+  .metric-value { font-size: 0.88rem; }
+
+  /* Gauge ring — smaller on tiny screens */
+  .gauge-ring { width: 64px; height: 64px; }
+  .gauge-ring svg { width: 64px; height: 64px; }
+  .gauge-val { font-size: 0.9rem; }
+
+  /* Soil bars */
+  .soil-bar-label { font-size: 0.58rem; width: 20px; }
+  .soil-bar-val { font-size: 0.58rem; width: 28px; }
+
+  /* FAB button */
+  .panel-toggle-btn { width: 46px; height: 46px; font-size: 1.05rem; bottom: 16px; right: 12px; }
+
+  /* Toast */
+  #toast-wrap { left: 8px; bottom: 12px; max-width: calc(100vw - 16px); }
+}
+
+/* ── LANDSCAPE PHONE ── */
+@media (max-width: 768px) and (orientation: landscape) {
+  :root { --mobile-panel-h: 70vh; --nav-h: 48px; }
+
+  nav { height: var(--nav-h); }
+
+  #panel-toggle-cb:checked ~ .main > div:first-child {
+    height: calc(100vh - var(--nav-h) - var(--mobile-panel-h));
+  }
+
+  /* Smaller FAB in landscape */
+  .panel-toggle-btn { bottom: 12px; right: 12px; width: 44px; height: 44px; font-size: 1rem; }
+
+  /* Cursor bar — even more compact */
+  #cursor-bar { font-size: 0.5rem; padding: 4px 10px; gap: 8px; }
+}
 </style>
 </head>
 <body>
+
+<!-- Mobile panel toggle checkbox (CSS-only drawer mechanism) -->
+<input type="checkbox" id="panel-toggle-cb" aria-hidden="true">
 
 <!-- ── NAV ── -->
 <nav>
@@ -797,10 +1178,10 @@ nav::after {
   <div class="nav-sep"></div>
 
   <div class="map-switcher">
-    <button class="map-btn active" onclick="switchMap('osm',this)">🗺 Улицы</button>
-    <button class="map-btn" onclick="switchMap('satellite',this)">🛰 Спутник</button>
-    <button class="map-btn" onclick="switchMap('topo',this)">⛰ Топо</button>
-    <button class="map-btn" onclick="switchMap('dark',this)">🌑 Ночь</button>
+    <button class="map-btn active" onclick="switchMap('osm',this)"><span class="map-icon">🗺</span><span class="map-label"> Улицы</span></button>
+    <button class="map-btn" onclick="switchMap('satellite',this)"><span class="map-icon">🛰</span><span class="map-label"> Спутник</span></button>
+    <button class="map-btn" onclick="switchMap('topo',this)"><span class="map-icon">⛰</span><span class="map-label"> Топо</span></button>
+    <button class="map-btn" onclick="switchMap('dark',this)"><span class="map-icon">🌑</span><span class="map-label"> Ночь</span></button>
   </div>
 
   <div class="nav-sep"></div>
@@ -808,13 +1189,13 @@ nav::after {
   <!-- Drawing tools -->
   <div class="draw-tools">
     <button class="draw-btn" id="btn-polygon" onclick="startDraw('polygon')">
-      ⬡ Обвести участок
+      <span class="draw-icon">⬡</span><span class="draw-label"> Обвести участок</span>
     </button>
     <button class="draw-btn" id="btn-marker" onclick="startDraw('marker')">
-      📍 Точка
+      <span class="draw-icon">📍</span><span class="draw-label"> Точка</span>
     </button>
     <button class="draw-btn" id="btn-clear" onclick="clearDrawings()">
-      🗑 Очистить
+      <span class="draw-icon">🗑</span><span class="draw-label"> Очистить</span>
     </button>
   </div>
 
@@ -926,6 +1307,11 @@ nav::after {
     </div>
   </div>
 </div>
+
+<!-- Mobile FAB: toggle analysis panel (CSS-only, label for checkbox) -->
+<label for="panel-toggle-cb" class="panel-toggle-btn" aria-label="Открыть/закрыть панель анализа">
+  📊
+</label>
 
 <!-- LOGIN MODAL -->
 <div class="modal-overlay" id="login-modal">
