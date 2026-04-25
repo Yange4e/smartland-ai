@@ -50,7 +50,14 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 .user-btn:hover{border-color:var(--accent2);color:var(--text)}
 .u-dot{width:7px;height:7px;border-radius:50%;background:var(--muted)}
 .u-dot.on{background:var(--accent);box-shadow:0 0 6px var(--accent)}
-
+/* MOBILE ADAPTATION */
+@media (max-width: 768px) {
+    .main { flex-direction: column-reverse; }
+    #panel { width: 100%; height: 40vh; border-left: none; border-top: 1px solid var(--border); }
+    nav { height: auto; padding: 10px; flex-wrap: wrap; }
+    .coord-search { width: 100%; order: 10; margin-top: 5px; }
+    .logo { width: 100%; justify-content: center; }
+}
 /* MAIN */
 .main{display:flex;flex:1;overflow:hidden;height:calc(100vh - var(--nav-h));position:relative}
 #map{flex:1;background:#0d1628;cursor:crosshair!important}
