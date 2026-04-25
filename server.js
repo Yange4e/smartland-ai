@@ -32,6 +32,17 @@ console.log('🔄 Database config:', {
   database: process.env.DB_NAME || 'geomap'
 });
 
+// ── LAND CATEGORIES (7 types) ──
+const LAND_CATEGORIES = [
+  { id: 1, name_kk: 'Ірік жер', name_ru: 'Орошаемые земли', icon: '💧', color: '#00a8e8' },
+  { id: 2, name_kk: 'Өндіретін жер', name_ru: 'Пахотные земли', icon: '🌾', color: '#4CAF50' },
+  { id: 3, name_kk: 'Өндіктеме', name_ru: 'Естественные пастбища', icon: '🐑', color: '#8BC34A' },
+  { id: 4, name_kk: 'Орман жер', name_ru: 'Лесные земли', icon: '🌲', color: '#2E7D32' },
+  { id: 5, name_kk: 'Суды жер', name_ru: 'Водные тела', icon: '🌊', color: '#1976D2' },
+  { id: 6, name_kk: 'Ғимараттар', name_ru: 'Застройка', icon: '🏢', color: '#757575' },
+  { id: 7, name_kk: 'Басқа', name_ru: 'Прочие земли', icon: '🏜️', color: '#C2185B' }
+];
+
 // ── INITIALIZE DATABASE ──
 async function initDatabase() {
   try {
@@ -55,11 +66,21 @@ async function initDatabase() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
+      CREATE TABLE IF NOT EXISTS land_categories (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name_kk VARCHAR(255) NOT NULL,
+        name_ru VARCHAR(255),
+        icon VARCHAR(10),
+        color VARCHAR(7),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
       CREATE TABLE IF NOT EXISTS objects (
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         description TEXT,
         layer_id INT,
+        land_category_id INT,
         type VARCHAR(50) DEFAULT 'point',
         lat DECIMAL(10, 6) NOT NULL,
         lng DECIMAL(10, 6) NOT NULL,
@@ -70,6 +91,7 @@ async function initDatabase() {
         author_id INT DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (layer_id) REFERENCES layers(id),
+        FOREIGN KEY (land_category_id) REFERENCES land_categories(id),
         FOREIGN KEY (author_id) REFERENCES users(id)
       );
 
@@ -96,7 +118,7 @@ async function initDatabase() {
     try {
       await conn.execute(
         'INSERT INTO users (username, password, name) VALUES (?, ?, ?)',
-        ['admin', require('crypto').createHash('md5').update('password').digest('hex'), 'Admin User']
+        ['admin', require('crypto').createHash('md5').update('password').digest('hex'), 'Админ']
       );
     } catch (e) {
       // User already exists
@@ -121,6 +143,18 @@ async function initDatabase() {
       );
     } catch (e) {
       // Layers already exist
+    }
+
+    // Insert land categories
+    for (const cat of LAND_CATEGORIES) {
+      try {
+        await conn.execute(
+          'INSERT INTO land_categories (id, name_kk, name_ru, icon, color) VALUES (?, ?, ?, ?, ?)',
+          [cat.id, cat.name_kk, cat.name_ru, cat.icon, cat.color]
+        );
+      } catch (e) {
+        // Already exists
+      }
     }
 
     conn.release();
@@ -170,7 +204,6 @@ app.post('/api/login', async (req, res) => {
 // GET /api/me
 app.get('/api/me', async (req, res) => {
   try {
-    // For demo purposes - returns not logged in
     res.json({ logged_in: false });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -185,10 +218,12 @@ app.get('/api/objects', async (req, res) => {
       SELECT o.id, o.name, o.description, o.lat, o.lng, o.type, o.area_ha, o.area_m2, o.elevation_m,
              COALESCE(l.name, 'Без слоя') as layer_name,
              COALESCE(l.color, '#00e5a0') as layer_color,
+             COALESCE(lc.name_kk, '') as land_category,
              COALESCE(u.name, 'Unknown') as author_name,
              o.attributes
       FROM objects o
       LEFT JOIN layers l ON o.layer_id = l.id
+      LEFT JOIN land_categories lc ON o.land_category_id = lc.id
       LEFT JOIN users u ON o.author_id = u.id
       LIMIT 100
     `);
@@ -228,11 +263,13 @@ app.get('/api/object', async (req, res) => {
       SELECT o.id, o.name, o.description, o.lat, o.lng, o.type, o.area_ha, o.area_m2, o.elevation_m,
              COALESCE(l.name, 'Без слоя') as layer_name,
              COALESCE(l.color, '#00e5a0') as layer_color,
+             COALESCE(lc.name_kk, '') as land_category,
              COALESCE(u.name, 'Unknown') as author_name,
              o.attributes,
              (6371 * acos(cos(radians(?)) * cos(radians(o.lat)) * cos(radians(o.lng) - radians(?)) + sin(radians(?)) * sin(radians(o.lat)))) as distance
       FROM objects o
       LEFT JOIN layers l ON o.layer_id = l.id
+      LEFT JOIN land_categories lc ON o.land_category_id = lc.id
       LEFT JOIN users u ON o.author_id = u.id
       HAVING distance < 0.1
       ORDER BY distance LIMIT 1
@@ -262,11 +299,67 @@ app.get('/api/elevation', (req, res) => {
       return res.status(400).json({ error: 'lat and lng required' });
     }
 
-    // Pseudo-random elevation based on coordinates
     const elevation = 100 + Math.abs(Math.sin(lat * 1000) * Math.cos(lng * 1000)) * 500;
     res.json({ elevation: Math.round(elevation) });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/analyze-area
+app.get('/api/analyze-area', async (req, res) => {
+  try {
+    const { lat, lng, radius } = req.query;
+    
+    if (!lat || !lng || !radius) {
+      return res.status(400).json({ error: 'lat, lng, radius required' });
+    }
+
+    // Mock area analysis with realistic land category distribution
+    const s = Math.abs(Math.sin(parseFloat(lat) * 1234.5) * Math.cos(parseFloat(lng) * 6789.1));
+    
+    const breakdown = [
+      { id: 2, name_kk: 'Өндіретін жер', icon: '🌾', color: '#4CAF50', percent: Math.round(30 + s * 30) },
+      { id: 3, name_kk: 'Өндіктеме', icon: '🐑', color: '#8BC34A', percent: Math.round(20 + s * 20) },
+      { id: 4, name_kk: 'Орман жер', icon: '🌲', color: '#2E7D32', percent: Math.round(10 + s * 10) },
+      { id: 1, name_kk: 'Ірік жер', icon: '💧', color: '#00a8e8', percent: Math.round(5 + s * 5) },
+      { id: 6, name_kk: 'Ғимараттар', icon: '🏢', color: '#757575', percent: Math.round(15 + s * 10) },
+      { id: 5, name_kk: 'Суды жер', icon: '🌊', color: '#1976D2', percent: Math.round(3 + s * 3) },
+      { id: 7, name_kk: 'Басқа', icon: '🏜️', color: '#C2185B', percent: Math.round(17 - s * 17) }
+    ];
+
+    // Normalize percentages
+    const total = breakdown.reduce((sum, cat) => sum + cat.percent, 0);
+    breakdown.forEach(cat => cat.percent = Math.round(cat.percent * 100 / total));
+
+    const dominant = breakdown.reduce((a, b) => a.percent > b.percent ? a : b);
+
+    const population = Math.round(50 + s * 400);
+    const buildings = Math.round(10 + s * 30);
+
+    res.json({
+      success: true,
+      dominant,
+      breakdown,
+      total_objects: buildings,
+      population,
+      buildings,
+      places: [
+        { name: 'Ақмола ауылы', distance: (2 + s * 3).toFixed(1) },
+        { name: 'Түркістан ауылы', distance: (5 + s * 4).toFixed(1) }
+      ],
+      amenities: {
+        school: Math.round(1 + s * 2),
+        hospital: Math.round(0 + s * 1),
+        shop: Math.round(2 + s * 3),
+        mosque: Math.round(0 + s * 1),
+        fuel: Math.round(1 + s * 1)
+      },
+      radius_m: parseInt(radius)
+    });
+  } catch (err) {
+    console.error('Analyze area error:', err);
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
@@ -283,10 +376,19 @@ app.get('/api/layers', async (req, res) => {
   }
 });
 
+// GET /api/land-categories
+app.get('/api/land-categories', async (req, res) => {
+  try {
+    res.json({ success: true, categories: LAND_CATEGORIES });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // POST /api/objects (add new object)
 app.post('/api/objects', async (req, res) => {
   try {
-    const { name, description, layer_id, type, lat, lng, attributes } = req.body;
+    const { name, description, layer_id, land_category_id, type, lat, lng, attributes } = req.body;
 
     if (!name) {
       return res.status(400).json({ success: false, error: 'Name required' });
@@ -298,12 +400,13 @@ app.post('/api/objects', async (req, res) => {
 
     const conn = await pool.getConnection();
     const [result] = await conn.execute(
-      `INSERT INTO objects (name, description, layer_id, type, lat, lng, attributes, author_id, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW())`,
+      `INSERT INTO objects (name, description, layer_id, land_category_id, type, lat, lng, attributes, author_id, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())`,
       [
         name,
         description || '',
         layer_id || null,
+        land_category_id || null,
         type || 'point',
         parseFloat(lat),
         parseFloat(lng),
