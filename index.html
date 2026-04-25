@@ -254,6 +254,49 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
   .cat-dominant{padding:10px;gap:8px}
   .cat-icon-big{width:38px;height:38px;font-size:1.2rem}
   .cat-percent-big{font-size:1.3rem}
+  /* Мобильная адаптация */
+@media (max-width: 768px) {
+  /* Складываем карту и панель вертикально (панель внизу, карта вверху) */
+  .main {
+    flex-direction: column-reverse;
+    height: calc(100vh - auto);
+  }
+
+  /* Панель занимает всю ширину и фиксированную высоту внизу */
+  #panel {
+    width: 100%;
+    height: 45vh;
+    border-left: none;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Шапка сайта переносится на новые строки, если не влезает */
+  nav {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 10px;
+    gap: 10px;
+  }
+
+  /* Блок поиска координат растягиваем на всю ширину */
+  .coord-search {
+    width: 100%;
+    order: 5;
+    margin-left: 0;
+    justify-content: space-between;
+  }
+
+  .coord-input {
+    flex: 1;
+    width: auto;
+  }
+
+  /* Скрываем второстепенные элементы навигации, чтобы не загромождать экран */
+  .draw-tools {
+    overflow-x: auto;
+    width: 100%;
+  }
+}
 }
 </style>
 </head>
@@ -375,7 +418,34 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 <script>
 const API = 'backend/api.php';
+async function registerUser() {
+  const login = document.getElementById('m-login').value;
+  const pass = document.getElementById('m-pass').value;
 
+  if (!login || !pass) {
+    toast("Логин мен құпиясөзді енгізіңіз!", "error");
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ login: login, password: pass })
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      toast("Тіркелу сәтті өтті!", "success");
+      closeModal();
+    } else {
+      toast("Қате: " + result.error, "error");
+    }
+  } catch (error) {
+    toast("Сервермен байланыс жоқ", "error");
+  }
+}
 // ── TILES ──
 const tiles = {
   osm:       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM',maxZoom:19,subdomains:'abc'}),
