@@ -325,42 +325,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
     </div>
   </div>
 </div>
-let authMode = 'login';
 
-    function openModal() { document.getElementById('auth-modal').classList.add('show'); }
-    function closeModal() { document.getElementById('auth-modal').classList.remove('show'); }
-
-    function toggleAuthMode() {
-        authMode = (authMode === 'login') ? 'register' : 'login';
-        document.getElementById('modal-title').innerText = (authMode === 'login') ? 'Жүйеге кіру' : 'Тіркелу';
-        document.getElementById('main-auth-btn').innerText = (authMode === 'login') ? 'Кіру' : 'Тіркелуді аяқтау';
-        document.getElementById('switch-btn').innerText = (authMode === 'login') ? 'Тіркелу' : 'Кіруге қайту';
-    }
-
-    async function handleAuth() {
-        const login = document.getElementById('m-login').value;
-        const pass = document.getElementById('m-pass').value;
-        const endpoint = authMode === 'login' ? '/api/login' : '/api/register';
-
-        try {
-            const res = await fetch(endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ login: login, password: pass })
-            });
-            const data = await res.json();
-            
-            if(data.success) {
-                toast(authMode === 'login' ? "Қош келдіңіз!" : "Тіркелу сәтті өтті!", "success");
-                document.getElementById('auth-btn').innerText = login;
-                closeModal();
-            } else {
-                toast(data.error, "error");
-            }
-        } catch(e) {
-            toast("Сервер қатесі", "error");
-        }
-    }
 <!-- LOGIN MODAL -->
 <div class="modal-overlay" id="login-modal">
   <div class="modal">
@@ -730,7 +695,7 @@ function renderAnalysis(d){
 function startAI(d){
   const soil=d.soil;
   const qLabel=soil.quality>72?'жоғары':soil.quality>52?'орташа':'төмен';
-  
+
   let baseTxt='';
   if(d.mode==='polygon'){
     baseTxt=`Талданып отырған учаске ауданы <em>${d.areaHa}</em> га (${Math.round(d.area).toLocaleString('ru')} м²), периметрі <em>${d.periKm}</em> км, <em>${d.pts}</em> геодезиялық нүктеден құралды. `;
@@ -743,10 +708,10 @@ function startAI(d){
   const soilTxt=`Топырақ типі — <strong>${soil.type}</strong>, pH деңгейі <em>${soil.ph}</em>. Бонитет баллы: <strong>${soil.quality}/100</strong> (${qLabel} деңгей). Пішінді элементтер: Азот (N) <em>${soil.N}%</em>, Фосфор (P) <em>${soil.P}%</em>, Калий (K) <em>${soil.K}%</em>, Ылғалдылық <em>${soil.moisture}%</em>. `;
 
   const recs=[];
-  
+
   // Жер санаты ұсыныстары
   recs.push({ico:'📐',txt:`<strong>Геодезиялық пайым:</strong> Учаске шекарасын мемлекеттік координаттар жүйесінде (СК-95) бекіту ұсынылады`});
-  
+
   // Өнімділік ұсыныстары
   if(soil.quality>72){
     recs.push({ico:'✅',txt:`<strong>Жоғары өнімділік (${soil.quality}/100):</strong> Учаске қарқынды ауылшаруашылығына жарамды — бидай, жоңышқа, подсолнечник дақылдарын өндіруге ұсынамыз`});
@@ -811,7 +776,7 @@ function startAI(d){
   const textEl=document.getElementById('ai-text');
   const recsEl=document.getElementById('ai-recs');
   const prog=document.getElementById('ai-progress');
-  
+
   if(!textEl)return;
   textEl.innerHTML='';
   let i=0;
@@ -862,16 +827,16 @@ async function loadLayers(){
     const d1=await r1.json();
     const r2=await fetch(`${API}/land-categories`);
     const d2=await r2.json();
-    
+
     if(!d1.layers)return;
     const list=document.getElementById('layers-list'),sel=document.getElementById('add-layer-sel'),catSel=document.getElementById('add-category-sel');
     list.innerHTML='';sel.innerHTML='<option value="">— қабат таңдаңыз —</option>';catSel.innerHTML='<option value="">— жер санаты таңдаңыз —</option>';
-    
+
     d1.layers.forEach(l=>{
       list.innerHTML+=`<div class="layer-item"><div class="l-dot" style="background:${l.color}"></div><div class="l-name">${l.name}</div><div class="l-toggle on" onclick="this.classList.toggle('on')"></div></div>`;
       sel.innerHTML+=`<option value="${l.id}">${l.name}</option>`;
     });
-    
+
     if(d2.categories){
       landCategories=d2.categories;
       d2.categories.forEach(c=>{
