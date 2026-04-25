@@ -8,10 +8,11 @@ app.use(cors());
 app.use(bodyParser.json());
 
 const pool = mysql.createPool({
-  host: 'localhost',
-  user: 'root',
-  password: '',
-  database: 'geomap',
+  host: process.env.MYSQLHOST || 'localhost',
+  user: process.env.MYSQLUSER || 'root',
+  password: process.env.MYSQLPASSWORD || '',
+  database: process.env.MYSQLDATABASE || 'geomap',
+  port: process.env.MYSQLPORT || 3306,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
@@ -37,7 +38,35 @@ app.post('/api/login', async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+// ── REGISTER (Добавление нового аккаунта) ──
+app.post('/api/register', async (req, res) => {
+  const { login, password, name } = req.body;
+  try {
+    const conn = await pool.getConnection();
+    
+    // 1. Проверяем, существует ли уже пользователь с таким логином
+    const [existingUsers] = await conn.execute(
+      'SELECT id FROM users WHERE username = ?',
+      [login]
+    );
+    
+    if (existingUsers.length > 0) {
+      conn.release();
+      return res.json({ success: false, error: 'Данный логин уже занят' });
+    }
 
+    // 2. Вставляем нового пользователя (используем MD5 для совпадения с методом логина)
+    const [result] = await conn.execute(
+      'INSERT INTO users (username, password, name) VALUES (?, MD5(?), ?)',
+      [login, password, name || login]
+    );
+    conn.release();
+
+    res.json({ success: true, userId: result.insertId });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 // ── GET ALL OBJECTS ──
 app.get('/api/objects', async (req, res) => {
   try {
