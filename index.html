@@ -907,6 +907,28 @@ async function doLogin(){
   }catch(e){toast('Байланыс қатесі','error');}
 }
 document.getElementById('m-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+  async function doRegister() {
+    const login = document.getElementById('m-login').value;
+    const pass = document.getElementById('m-pass').value;
+
+    try {
+        // Отправляем запрос на твой сервер в Railway
+        const response = await fetch('https://твой-проект.railway.app/api/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: login, password: pass })
+        });
+
+        if (response.ok) {
+            toast("Аккаунт создан!", "success");
+            closeModal();
+        } else {
+            toast("Ошибка регистрации", "error");
+        }
+    } catch (e) {
+        toast("Сервер недоступен", "error");
+    }
+}
 
 // ── UI ──
 function switchTab(id,btn){
