@@ -325,7 +325,42 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
     </div>
   </div>
 </div>
+let authMode = 'login';
 
+    function openModal() { document.getElementById('auth-modal').classList.add('show'); }
+    function closeModal() { document.getElementById('auth-modal').classList.remove('show'); }
+
+    function toggleAuthMode() {
+        authMode = (authMode === 'login') ? 'register' : 'login';
+        document.getElementById('modal-title').innerText = (authMode === 'login') ? 'Жүйеге кіру' : 'Тіркелу';
+        document.getElementById('main-auth-btn').innerText = (authMode === 'login') ? 'Кіру' : 'Тіркелуді аяқтау';
+        document.getElementById('switch-btn').innerText = (authMode === 'login') ? 'Тіркелу' : 'Кіруге қайту';
+    }
+
+    async function handleAuth() {
+        const login = document.getElementById('m-login').value;
+        const pass = document.getElementById('m-pass').value;
+        const endpoint = authMode === 'login' ? '/api/login' : '/api/register';
+
+        try {
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ login: login, password: pass })
+            });
+            const data = await res.json();
+            
+            if(data.success) {
+                toast(authMode === 'login' ? "Қош келдіңіз!" : "Тіркелу сәтті өтті!", "success");
+                document.getElementById('auth-btn').innerText = login;
+                closeModal();
+            } else {
+                toast(data.error, "error");
+            }
+        } catch(e) {
+            toast("Сервер қатесі", "error");
+        }
+    }
 <!-- LOGIN MODAL -->
 <div class="modal-overlay" id="login-modal">
   <div class="modal">
