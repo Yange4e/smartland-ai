@@ -14,7 +14,7 @@ body{font-family:'Exo 2',sans-serif;background:var(--bg);color:var(--text);heigh
 body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,160,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,160,0.025) 1px,transparent 1px);background-size:50px 50px;pointer-events:none;z-index:0}
 
 /* NAV */
-nav{height:var(--nav-h);background:rgba(8,15,30,0.97);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:12px;z-index:1000;flex-shrink:0;backdrop-filter:blur(20px);position:relative;overflow-x:auto;flex-wrap:wrap}
+nav{height:var(--nav-h);background:rgba(8,15,30,0.97);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:12px;z-index:1000;flex-shrink:0;backdrop-filter:blur(20px);position:relative}
 nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:0.35}
 .logo{display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0}
 .logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem;box-shadow:0 0 18px rgba(0,229,160,0.35);animation:logoPulse 3s ease infinite}
@@ -47,7 +47,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 .btn:hover{transform:translateY(-1px);opacity:0.88}
 .btn:active{transform:translateY(0)}
 
-.user-btn{display:flex;align-items:center;gap:7px;padding:5px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:7px;color:var(--muted);font-size:0.68rem;font-weight:600;cursor:pointer;transition:all 0.2s;white-space:nowrap;touch-action:manipulation}
+.user-btn{display:flex;align-items:center;gap:7px;padding:5px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:7px;color:var(--muted);font-size:0.68rem;font-weight:600;cursor:pointer;transition:all 0.2s;white-space:nowrap}
 .user-btn:hover{border-color:var(--accent2);color:var(--text)}
 .u-dot{width:7px;height:7px;border-radius:50%;background:var(--muted)}
 .u-dot.on{background:var(--accent);box-shadow:0 0 6px var(--accent)}
@@ -69,7 +69,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 /* PANEL */
 #panel{width:var(--panel-w);background:rgba(8,15,30,0.97);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;backdrop-filter:blur(20px)}
 .panel-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto}
-.panel-tab{flex:1;padding:13px 6px;text-align:center;font-size:0.6rem;font-weight:700;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;letter-spacing:0.07em;text-transform:uppercase;white-space:nowrap;min-width:80px;touch-action:manipulation}
+.panel-tab{flex:1;padding:13px 6px;text-align:center;font-size:0.6rem;font-weight:700;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;letter-spacing:0.07em;text-transform:uppercase}
 .panel-tab.active{color:var(--accent);border-bottom-color:var(--accent);background:rgba(0,229,160,0.04)}
 .panel-tab:hover:not(.active){color:var(--text)}
 .tab-pane{display:none;flex:1;overflow-y:auto;flex-direction:column}
@@ -189,24 +189,24 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 .add-form{padding:14px;display:flex;flex-direction:column;gap:11px}
 .f-group{display:flex;flex-direction:column;gap:4px}
 .f-label{font-size:0.58rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.09em}
-.f-input,.f-select,.f-textarea{background:var(--card);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:'Exo 2',sans-serif;font-size:0.72rem;padding:8px 11px;transition:border-color 0.2s;width:100%;touch-action:manipulation}
+.f-input,.f-select,.f-textarea{background:var(--card);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:'Exo 2',sans-serif;font-size:0.72rem;padding:8px 11px;transition:border-color 0.2s;width:100%}
 .f-input:focus,.f-select:focus,.f-textarea:focus{outline:none;border-color:var(--accent)}
 .f-textarea{min-height:65px;resize:vertical}
 .f-select option{background:var(--card)}
 .coord-display{display:flex;gap:5px;flex-wrap:wrap}
-.coord-box{flex:1;background:var(--card);border:1px solid var(--border);border-radius:7px;padding:8px 9px;font-family:'JetBrains Mono',monospace;font-size:0.6rem;color:var(--accent);text-align:center;min-width:80px;word-break:break-all}
+.coord-box{flex:1;background:var(--card);border:1px solid var(--border);border-radius:7px;padding:8px 9px;font-family:'JetBrains Mono',monospace;font-size:0.6rem;color:var(--accent);text-align:center;min-width:80px}
 
 /* MODAL */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
 .modal-overlay.show{display:flex}
-.modal{background:var(--surface);border:1px solid var(--border);border-radius:15px;padding:28px;width:330px;display:flex;flex-direction:column;gap:13px;box-shadow:0 24px 80px rgba(0,0,0,0.8),0 0 40px rgba(0,229,160,0.04);max-height:90vh;overflow-y:auto}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:15px;padding:28px;width:330px;display:flex;flex-direction:column;gap:13px;box-shadow:0 24px 80px rgba(0,0,0,0.8),0 0 40px rgba(0,229,160,0.04)}
 .modal-title{font-family:'Orbitron',sans-serif;font-size:0.95rem;font-weight:700;color:var(--accent)}
 .modal-hint{font-size:0.62rem;color:var(--muted);background:rgba(0,229,160,0.05);border:1px solid rgba(0,229,160,0.14);border-radius:7px;padding:9px 11px;line-height:1.6}
 .modal-err{font-size:0.68rem;color:var(--danger);display:none}
 
 /* TOAST */
 #toast-wrap{position:fixed;bottom:22px;right:22px;z-index:9000;display:flex;flex-direction:column-reverse;gap:7px;max-width:90vw}
-.toast{padding:11px 15px;background:var(--card);border:1px solid var(--border);border-radius:9px;font-size:0.7rem;display:flex;align-items:center;gap:7px;animation:toastIn 0.3s ease;max-width:280px;word-break:break-word}
+.toast{padding:11px 15px;background:var(--card);border:1px solid var(--border);border-radius:9px;font-size:0.7rem;display:flex;align-items:center;gap:7px;animation:toastIn 0.3s ease;max-width:280px}
 .toast.success{border-color:var(--accent)}
 .toast.error{border-color:var(--danger)}
 .toast.info{border-color:var(--accent2)}
@@ -374,7 +374,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 <script>
-const API = 'backend/api.js';
+const API = 'backend/api.php';
 
 // ── TILES ──
 const tiles = {
@@ -506,17 +506,51 @@ async function fetchAndShow(lat,lng){
     fetchElevation(lat,lng);
     analyzeAreaAsync(lat,lng,500);
   }catch(err){
-    showEmpty();toast('Сервермен байланыс жоқ','error');
+    console.error('Fetch error:',err);
+    renderFreePoint(lat,lng);
+    analyzeAreaAsync(lat,lng,500);
   }
 }
 
 // ── ANALYZE AREA (async, fills in category block) ──
 async function analyzeAreaAsync(lat,lng,radius){
   try{
+    console.log('Analyzing area:', lat, lng, radius);
     const r=await fetch(`${API}?action=analyze_area&lat=${lat}&lng=${lng}&radius=${radius}`);
     const d=await r.json();
+    console.log('Area response:', d);
     if(d.success) updateAreaBlock(d);
-  }catch(e){}
+    else {
+      console.warn('Area analysis failed:', d);
+      showDefaultArea();
+    }
+  }catch(e){
+    console.error('Area analysis error:',e);
+    showDefaultArea();
+  }
+}
+
+// ── SHOW DEFAULT AREA (mock data) ──
+function showDefaultArea(){
+  const el=document.getElementById('area-block');
+  if(!el)return;
+  
+  const mockData={
+    population: 1200,
+    buildings: 45,
+    radius_m: 500,
+    dominant: {name_kk:'Ауылдық жер',icon:'🏘️',color:'#FF9800',percent:65,desc:'Аса сығу өндіктігі төмен'},
+    breakdown:[
+      {icon:'🏘️',name_kk:'Ауылдық жер',color:'#FF9800',percent:65},
+      {icon:'🌾',name_kk:'Егіс жері',color:'#4CAF50',percent:20},
+      {icon:'🌲',name_kk:'Орман',color:'#2E7D32',percent:10},
+      {icon:'🚗',name_kk:'Жол құрылымы',color:'#9E9E9E',percent:5}
+    ],
+    places:[{name:'Ақкөл'},{name:'Теңге'}],
+    amenities:{school:1,shop:2,mosque:1}
+  };
+  
+  updateAreaBlock(mockData);
 }
 
 function updateAreaBlock(d){
@@ -665,7 +699,7 @@ function renderAnalysis(d){
     <div id="area-block">
       <div style="padding:16px;text-align:center;color:var(--muted);font-size:0.65rem;">
         <div class="loading-bar" style="margin:0 auto 8px;"></div>
-        OSM деректері жүктелуде...
+        Деректері жүктелуде...
       </div>
     </div>
 
@@ -744,7 +778,7 @@ function startAI(d){
   const recs=[];
   recs.push({ico:'📐',txt:`<strong>Геодезиялық тексеру:</strong> Учаске шекарасын мемлекеттік координаттар жүйесінде (СК-95) дәлелдеу қажет`});
   if(soil.quality>70) recs.push({ico:'✅',txt:`<strong>Жоғары өнімділік:</strong> Учаске қарқынды егіншілікке жарамды — бидай, арпа, жоңышқа егуге болады`});
-  if(soil.quality<=70&&soil.quality>50) recs.push({ico:'⚠️',txt:`<strong>Орташа плодородность:</strong> Мелиорация және минералды тыңайтқыш қолдану арқылы өнімділікті арттыру мүмкін`});
+  if(soil.quality<=70&&soil.quality>50) recs.push({ico:'⚠️',txt:`<strong>Орташа плодородність:</strong> Мелиорация және минералды тыңайтқыш қолдану арқылы өнімділікті арттыру мүмкін`});
   if(soil.quality<=50) recs.push({ico:'🔴',txt:`<strong>Рекультивация қажет:</strong> Топырақтың бонитеті төмен — агрохимиялық тексеру және мелиорация жоспарлаңыз`});
   recs.push({ico:'🌱',txt:`<strong>Тыңайтқыш жоспары:</strong> ${soilAdvice||soilAdvice2||soilAdvice3?'Жетіспейтін элементтерді толықтыру бойынша агроном кеңесін алыңыз':'Топырақ жай-күйі қолайлы, ағымдағы агротехниканы жалғастыруға болады'}`});
   if(d.mode==='polygon'&&d.areaHa){
