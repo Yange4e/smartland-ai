@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SmartLand AI — Геоаналитикалық платформа</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700;900&family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@400
 <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700;900&family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#040810;--surface:#080f1e;--card:#0d1628;--border:#1a2540;--accent:#00e5a0;--accent2:#0af;--accent3:#f5c518;--danger:#ff4560;--text:#e8f0fe;--muted:#5a7090;--nav-h:60px;--panel-w:390px}
@@ -246,7 +248,12 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
     <input class="coord-input" id="inp-lng" placeholder="Бойлық">
     <button class="btn btn-green" onclick="goToCoords()">Табу</button>
   </div>
- 
+  <div class="nav-sep"></div>
+  <div class="user-btn" id="user-btn" onclick="openModal()">
+    <div class="u-dot" id="u-dot"></div>
+    <span id="u-label">Кіру</span>
+  </div>
+</nav>
 
 <div class="main">
   <div style="position:relative;flex:1;display:flex;flex-direction:column;">
