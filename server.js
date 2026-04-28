@@ -359,22 +359,25 @@ const breakdown = Object.entries(breakdownMap).map(([id, cat]) => ({
       total_objects: buildings,
       population,
       buildings,
-places: getNearbyPlaces(lat, lng),
-      amenities: {
-        school: Math.round(1 + s * 2),
-        hospital: Math.round(0 + s * 1),
-        shop: Math.round(2 + s * 3),
-        mosque: Math.round(0 + s * 1),
-        fuel: Math.round(1 + s * 1)
-      },
-      radius_m: parseInt(radius)
-    });
-  } catch (err) {
-    console.error('Analyze area error:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
+const places = await getNearbyPlaces(lat, lng);
 
+res.json({
+  success: true,
+  dominant,
+  breakdown,
+  total_objects: buildings,
+  population,
+  buildings,
+  places,
+  amenities: {
+    school: Math.round(1 + s * 2),
+    hospital: Math.round(0 + s * 1),
+    shop: Math.round(2 + s * 3),
+    mosque: Math.round(0 + s * 1),
+    fuel: Math.round(1 + s * 1)
+  },
+  radius_m: parseInt(radius)
+});
 // GET /api/layers
 app.get('/api/layers', async (req, res) => {
   try {
