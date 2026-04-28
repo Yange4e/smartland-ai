@@ -33,7 +33,7 @@ console.log('🔄 Database config:', {
 });
 
 // ── 7 САНАТ (Казахстан жер кодексі) ──
-const LAND_CATS = {
+const breakdown = [
   1: { name_kk: 'Ауылшаруашылық жері',     icon: '🌾', color: '#4CAF50',
        tags: ['farmland','orchard','vineyard','allotments','greenhouse_horticulture','plant_nursery','meadow'] },
   2: { name_kk: 'Жайылым жері',             icon: '🐄', color: '#8BC34A',
@@ -48,7 +48,7 @@ const LAND_CATS = {
        tags: ['water','wetland','reservoir','basin','salt_pond'] },
   7: { name_kk: 'Ерекше қорғалатын аумақ', icon: '🏞️', color: '#00BCD4',
        tags: ['nature_reserve','national_park','protected_area','cemetery'] },
-};
+];
 
 // ── INITIALIZE DATABASE ──
 async function initDatabase() {
@@ -326,7 +326,8 @@ app.get('/api/analyze-area', async (req, res) => {
     const s = Math.abs(Math.sin(parseFloat(lat) * 1234.5) * Math.cos(parseFloat(lng) * 6789.1));
     
 // ── 7 САНАТ (Казахстан жер кодексі) ──
-const LAND_CATS = {
+// ── 7 САНАТ (Казахстан жер кодексі) ──
+const breakdown = [
   1: { name_kk: 'Ауылшаруашылық жері',     icon: '🌾', color: '#4CAF50',
        tags: ['farmland','orchard','vineyard','allotments','greenhouse_horticulture','plant_nursery','meadow'] },
   2: { name_kk: 'Жайылым жері',             icon: '🐄', color: '#8BC34A',
@@ -341,7 +342,7 @@ const LAND_CATS = {
        tags: ['water','wetland','reservoir','basin','salt_pond'] },
   7: { name_kk: 'Ерекше қорғалатын аумақ', icon: '🏞️', color: '#00BCD4',
        tags: ['nature_reserve','national_park','protected_area','cemetery'] },
-};
+];
 
     // Normalize percentages
     const total = breakdown.reduce((sum, cat) => sum + cat.percent, 0);
