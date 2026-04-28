@@ -31,17 +31,23 @@ console.log('🔄 Database config:', {
   user: process.env.DB_USER || 'root',
   database: process.env.DB_NAME || 'geomap'
 });
-
-// ── LAND CATEGORIES (7 types) ──
-const LAND_CATEGORIES = [
-  { id: 1, name_kk: 'Ірік жер', name_ru: 'Орошаемые земли', icon: '💧', color: '#00a8e8' },
-  { id: 2, name_kk: 'Өндіретін жер', name_ru: 'Пахотные земли', icon: '🌾', color: '#4CAF50' },
-  { id: 3, name_kk: 'Өндіктеме', name_ru: 'Естественные пастбища', icon: '🐑', color: '#8BC34A' },
-  { id: 4, name_kk: 'Орман жер', name_ru: 'Лесные земли', icon: '🌲', color: '#2E7D32' },
-  { id: 5, name_kk: 'Суды жер', name_ru: 'Водные тела', icon: '🌊', color: '#1976D2' },
-  { id: 6, name_kk: 'Ғимараттар', name_ru: 'Застройка', icon: '🏢', color: '#757575' },
-  { id: 7, name_kk: 'Басқа', name_ru: 'Прочие земли', icon: '🏜️', color: '#C2185B' }
-];
+// ── 7 САНАТ (Казахстан жер кодексі) ──
+const LAND_CATS = {
+  1: { name_kk: 'Ауылшаруашылық жері',     icon: '🌾', color: '#4CAF50',
+       tags: ['farmland','orchard','vineyard','allotments','greenhouse_horticulture','plant_nursery','meadow'] },
+  2: { name_kk: 'Жайылым жері',             icon: '🐄', color: '#8BC34A',
+       tags: ['grass','grassland','heath','scrub','fell'] },
+  3: { name_kk: 'Елді мекен жері',          icon: '🏘️', color: '#FF9800',
+       tags: ['residential','commercial','retail','construction','garages'] },
+  4: { name_kk: 'Өнеркәсіп жері',           icon: '🏭', color: '#9E9E9E',
+       tags: ['industrial','quarry','landfill','railway','aeroway','port'] },
+  5: { name_kk: 'Орман қоры жері',          icon: '🌲', color: '#2E7D32',
+       tags: ['forest','wood','tree_row'] },
+  6: { name_kk: 'Су қоры жері',             icon: '💧', color: '#2196F3',
+       tags: ['water','wetland','reservoir','basin','salt_pond'] },
+  7: { name_kk: 'Ерекше қорғалатын аумақ', icon: '🏞️', color: '#00BCD4',
+       tags: ['nature_reserve','national_park','protected_area','cemetery'] },
+};
 
 // ── INITIALIZE DATABASE ──
 async function initDatabase() {
