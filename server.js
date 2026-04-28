@@ -31,6 +31,7 @@ console.log('🔄 Database config:', {
   user: process.env.DB_USER || 'root',
   database: process.env.DB_NAME || 'geomap'
 });
+
 // ── 7 САНАТ (Казахстан жер кодексі) ──
 const LAND_CATS = {
   1: { name_kk: 'Ауылшаруашылық жері',     icon: '🌾', color: '#4CAF50',
@@ -324,15 +325,23 @@ app.get('/api/analyze-area', async (req, res) => {
     // Mock area analysis with realistic land category distribution
     const s = Math.abs(Math.sin(parseFloat(lat) * 1234.5) * Math.cos(parseFloat(lng) * 6789.1));
     
-    const breakdown = [
-      { id: 2, name_kk: 'Өндіретін жер', icon: '🌾', color: '#4CAF50', percent: Math.round(30 + s * 30) },
-      { id: 3, name_kk: 'Өндіктеме', icon: '🐑', color: '#8BC34A', percent: Math.round(20 + s * 20) },
-      { id: 4, name_kk: 'Орман жер', icon: '🌲', color: '#2E7D32', percent: Math.round(10 + s * 10) },
-      { id: 1, name_kk: 'Ірік жер', icon: '💧', color: '#00a8e8', percent: Math.round(5 + s * 5) },
-      { id: 6, name_kk: 'Ғимараттар', icon: '🏢', color: '#757575', percent: Math.round(15 + s * 10) },
-      { id: 5, name_kk: 'Суды жер', icon: '🌊', color: '#1976D2', percent: Math.round(3 + s * 3) },
-      { id: 7, name_kk: 'Басқа', icon: '🏜️', color: '#C2185B', percent: Math.round(17 - s * 17) }
-    ];
+// ── 7 САНАТ (Казахстан жер кодексі) ──
+const LAND_CATS = {
+  1: { name_kk: 'Ауылшаруашылық жері',     icon: '🌾', color: '#4CAF50',
+       tags: ['farmland','orchard','vineyard','allotments','greenhouse_horticulture','plant_nursery','meadow'] },
+  2: { name_kk: 'Жайылым жері',             icon: '🐄', color: '#8BC34A',
+       tags: ['grass','grassland','heath','scrub','fell'] },
+  3: { name_kk: 'Елді мекен жері',          icon: '🏘️', color: '#FF9800',
+       tags: ['residential','commercial','retail','construction','garages'] },
+  4: { name_kk: 'Өнеркәсіп жері',           icon: '🏭', color: '#9E9E9E',
+       tags: ['industrial','quarry','landfill','railway','aeroway','port'] },
+  5: { name_kk: 'Орман қоры жері',          icon: '🌲', color: '#2E7D32',
+       tags: ['forest','wood','tree_row'] },
+  6: { name_kk: 'Су қоры жері',             icon: '💧', color: '#2196F3',
+       tags: ['water','wetland','reservoir','basin','salt_pond'] },
+  7: { name_kk: 'Ерекше қорғалатын аумақ', icon: '🏞️', color: '#00BCD4',
+       tags: ['nature_reserve','national_park','protected_area','cemetery'] },
+};
 
     // Normalize percentages
     const total = breakdown.reduce((sum, cat) => sum + cat.percent, 0);
