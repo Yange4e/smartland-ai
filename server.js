@@ -359,10 +359,7 @@ const breakdown = Object.entries(breakdownMap).map(([id, cat]) => ({
       total_objects: buildings,
       population,
       buildings,
-      places: [
-        { name: 'Ақмола ауылы', distance: (2 + s * 3).toFixed(1) },
-        { name: 'Түркістан ауылы', distance: (5 + s * 4).toFixed(1) }
-      ],
+places: getNearbyPlaces(lat, lng),
       amenities: {
         school: Math.round(1 + s * 2),
         hospital: Math.round(0 + s * 1),
